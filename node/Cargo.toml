@@ -1,20 +1,19 @@
 [package]
-name = "contracts-node"
+name = "solar-node"
 version = "0.1.0"
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["netwarps Technologies <admin@netwarps.com>"]
 description = "Substrate node configured for smart contracts via `pallet-contracts`."
 edition = "2018"
 license = "Unlicense"
-build = "build.rs"
-homepage = "https://github.com/paritytech/substrate-contracts-node"
-repository = "https://github.com/paritytech/substrate-contracts-node"
+homepage = "https://github.com/netwarps/solar-node"
+repository = "https://github.com/netwarps/solar-node"
 publish = false
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [[bin]]
-name = "substrate-contracts-node"
+name = "solar-node"
 path = "src/main.rs"
 
 [dependencies]
@@ -55,7 +54,7 @@ pallet-contracts-rpc = { git = "https://github.com/paritytech/substrate", packag
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", package = "frame-benchmarking" }
 frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", package = "frame-benchmarking-cli" }
 
-contracts-node-runtime = { path = "../runtime" }
+solar-node-runtime = { path = "../runtime" }
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", package = "substrate-build-script-utils" }
@@ -63,5 +62,5 @@ substrate-build-script-utils = { git = "https://github.com/paritytech/substrate"
 [features]
 default = []
 runtime-benchmarks = [
-	"contracts-node-runtime/runtime-benchmarks",
+	"solar-node-runtime/runtime-benchmarks",
 ]

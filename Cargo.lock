@@ -822,82 +822,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
-name = "contracts-node"
-version = "0.1.0"
-dependencies = [
- "contracts-node-runtime",
- "frame-benchmarking",
- "frame-benchmarking-cli",
- "jsonrpc-core",
- "pallet-contracts-rpc",
- "pallet-transaction-payment-rpc",
- "sc-basic-authorship",
- "sc-cli",
- "sc-client-api",
- "sc-consensus",
- "sc-consensus-aura",
- "sc-executor",
- "sc-finality-grandpa",
- "sc-keystore",
- "sc-rpc",
- "sc-rpc-api",
- "sc-service",
- "sc-telemetry",
- "sc-transaction-pool",
- "sc-transaction-pool-api",
- "sp-api",
- "sp-block-builder",
- "sp-blockchain",
- "sp-consensus",
- "sp-consensus-aura",
- "sp-core",
- "sp-finality-grandpa",
- "sp-inherents",
- "sp-runtime",
- "sp-timestamp",
- "structopt",
- "substrate-build-script-utils",
- "substrate-frame-rpc-system",
-]
-
-[[package]]
-name = "contracts-node-runtime"
-version = "0.1.0"
-dependencies = [
- "frame-benchmarking",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-benchmarking",
- "frame-system-rpc-runtime-api",
- "hex-literal",
- "pallet-aura",
- "pallet-balances",
- "pallet-contracts",
- "pallet-contracts-primitives",
- "pallet-contracts-rpc-runtime-api",
- "pallet-grandpa",
- "pallet-randomness-collective-flip",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "parity-scale-codec",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
- "substrate-wasm-builder",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6203,6 +6127,82 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "sha-1 0.9.8",
+]
+
+[[package]]
+name = "solar-node"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-benchmarking-cli",
+ "jsonrpc-core",
+ "pallet-contracts-rpc",
+ "pallet-transaction-payment-rpc",
+ "sc-basic-authorship",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-consensus-aura",
+ "sc-executor",
+ "sc-finality-grandpa",
+ "sc-keystore",
+ "sc-rpc",
+ "sc-rpc-api",
+ "sc-service",
+ "sc-telemetry",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "solar-node-runtime",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-timestamp",
+ "structopt",
+ "substrate-build-script-utils",
+ "substrate-frame-rpc-system",
+]
+
+[[package]]
+name = "solar-node-runtime"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "hex-literal",
+ "pallet-aura",
+ "pallet-balances",
+ "pallet-contracts",
+ "pallet-contracts-primitives",
+ "pallet-contracts-rpc-runtime-api",
+ "pallet-grandpa",
+ "pallet-randomness-collective-flip",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
 ]
 
 [[package]]

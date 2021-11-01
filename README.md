@@ -1,4 +1,4 @@
-# substrate-contracts-node
+# solar-node
 
 This repository contains Substrate's [`node-template`](https://github.com/paritytech/substrate/tree/master/bin/node-template)
 configured to include Substrate's [`pallet-contracts`](https://github.com/paritytech/substrate/tree/master/frame/contracts)

@@ -3,13 +3,13 @@ use crate::{
 	cli::{Cli, Subcommand},
 	service,
 };
-use contracts_node_runtime::Block;
+use solar_node_runtime::Block;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Contracts Node".into()
+		"Solar Node".into()
 	}
 
 	fn impl_version() -> String {
@@ -42,7 +42,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&contracts_node_runtime::VERSION
+		&solar_node_runtime::VERSION
 	}
 }
 

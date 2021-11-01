@@ -1,11 +1,11 @@
 [package]
-name = "contracts-node-runtime"
+name = "solar-node-runtime"
 version = "0.1.0"
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = ["netwarps Technologies <admin@netwarps.com>"]
 edition = "2018"
 license = "Unlicense"
-homepage = "https://github.com/paritytech/substrate-contracts-node"
-repository = "https://github.com/paritytech/substrate-contracts-node"
+homepage = "https://github.com/netwarps/solar-node"
+repository = "https://github.com/netwarps/solar-node"
 publish = false
 
 [package.metadata.docs.rs]
@@ -99,7 +99,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 ]
 # Make contract callable functions marked as __unstable__ available. Do not enable
-# on live chains as those are subject to change.
+# on live chains as those are subject to change. 
 contracts-unstable-interface = [
 	"pallet-contracts/unstable-interface"
 ]

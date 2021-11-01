@@ -90,8 +90,8 @@ pub mod opaque {
 //   https://substrate.dev/docs/en/knowledgebase/runtime/upgrades#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("substrate-contracts-node"),
-	impl_name: create_runtime_str!("substrate-contracts-node"),
+	spec_name: create_runtime_str!("solar-node"),
+	impl_name: create_runtime_str!("solar-node"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,

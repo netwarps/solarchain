@@ -1,4 +1,4 @@
-use contracts_node_runtime::{
+use solar_node_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
 	SystemConfig, WASM_BINARY,
 };

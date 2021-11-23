@@ -15,9 +15,7 @@ ARG APP=/usr/src/app
 COPY --from=builder ${APP}/target/release/solar-node /usr/local/bin/solar-node
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d ${APP} solar && \
-	mkdir -p /data ${APP}/.local/share && \
 	chown -R solar:solar /data && \
-	ln -s /data ${APP}/.local/share/solar && \
 	rm -rf /usr/bin /usr/sbin && \
 	/usr/local/bin/solar-node --version
 

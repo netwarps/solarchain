@@ -10,9 +10,13 @@ services:
     volumes:
       - "solarchain-data-alice:/data"
     command: |
-      --chain=solarchain-local
+      --chain=local
       --alice
       -d /data
+      --unsafe-rpc-external
+      --unsafe-ws-external
+      --rpc-cors all
+      --prometheus-external
       --node-key 0000000000000000000000000000000000000000000000000000000000000001
     networks:
       testing_net:
@@ -30,10 +34,14 @@ services:
     links:
       - "node_alice:alice"
     command: |
-      --chain=solarchain-local
+      --chain=local
       --bob
       -d /data
-      --bootnodes '/ip4/172.28.1.1/tcp/30333/p2p/QmRpheLN4JWdAnY7HGJfWFNbfkQCb6tFf4vvA6hgjMZKrR'
+      --unsafe-rpc-external
+      --unsafe-ws-external
+      --rpc-cors all
+      --prometheus-external
+      --bootnodes '/ip4/172.28.1.1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp'
     networks:
       testing_net:
         ipv4_address: 172.28.1.2

@@ -16,7 +16,8 @@ REGISTRY=registry.paradeum.com
 # Build the image
 echo "Building ${GITUSER}/${GITREPO}:latest docker image, hang on!"
 time docker build -f ./scripts/dockerfiles/Dockerfile -t ${GITUSER}/${GITREPO}:latest .
-docker tag ${GITUSER}/${GITREPO}:latest ${REGISTRY}/${GITUSER}/${GITREPO}:v${VERSION}
+docker tag ${GITUSER}/${GITREPO}:latest ${REGISTRY}/${GITUSER}/${GITREPO}:latest
+docker tag ${REGISTRY}/${GITUSER}/${GITREPO}:latest ${REGISTRY}/${GITUSER}/${GITREPO}:v${VERSION}
 
 # Show the list of available images for this repo
 echo "Image is ready"

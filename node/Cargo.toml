@@ -1,6 +1,6 @@
 [package]
 name = "solar-node"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["netwarps Technologies <admin@netwarps.com>"]
 description = "Substrate node configured for smart contracts via `pallet-contracts`."
 edition = "2018"

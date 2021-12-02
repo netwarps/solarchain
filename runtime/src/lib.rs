@@ -98,7 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 101,
+	spec_version: 103,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -329,7 +329,14 @@ parameter_types! {
 			<Runtime as pallet_contracts::Config>::WeightInfo::on_initialize_per_queue_item(1) -
 			<Runtime as pallet_contracts::Config>::WeightInfo::on_initialize_per_queue_item(0)
 		)) / 5) as u32;
-	pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
+	//pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
+	pub Schedule: pallet_contracts::Schedule<Runtime> = pallet_contracts::Schedule{
+		limits: pallet_contracts::Limits {
+		   code_len: 256 * 1024,
+			.. Default::default()
+		 },
+		.. Default::default()
+	};
 }
 
 impl pallet_contracts::Config for Runtime {
@@ -374,6 +381,21 @@ impl pallet_scheduler::Config for Runtime {
     type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MaxTokenMetaLength: u32 = 128;
+    pub const MaxTokens: u128 = 10_000_000_000u128;
+    pub const MaxTokensPerUser: u64 = 1_000_000u64;
+}
+
+/// Configure the pallet-nft in pallets/nft.
+impl pallet_nft::Config for Runtime {
+	type TokenAdmin = frame_system::EnsureRoot<AccountId>;
+	type TokenInfo = Vec<u8>;
+	type TokenMetaLimit = MaxTokenMetaLength;
+	type TokenLimit = MaxTokens;
+	type UserTokenLimit = MaxTokensPerUser;
+	type Event = Event;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -392,6 +414,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		Contracts: pallet_contracts,
 		Scheduler: pallet_scheduler,
+		Nft: pallet_nft,
 	}
 );
 

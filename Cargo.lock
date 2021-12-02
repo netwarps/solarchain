@@ -3775,6 +3775,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-nft"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-randomness-collective-flip"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?tag=monthly-2021-11-1#352c46a648a5f2d4526e790a184daa4a1ffdb3bf"
@@ -6000,7 +6015,7 @@ dependencies = [
 
 [[package]]
 name = "solar-node"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -6039,7 +6054,7 @@ dependencies = [
 
 [[package]]
 name = "solar-node-runtime"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -6054,6 +6069,7 @@ dependencies = [
  "pallet-contracts-primitives",
  "pallet-contracts-rpc-runtime-api",
  "pallet-grandpa",
+ "pallet-nft",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
  "pallet-sudo",

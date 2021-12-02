@@ -160,5 +160,6 @@ fn testnet_genesis(
 		},
 		transaction_payment: Default::default(),
 		scheduler: Default::default(),
+		nft: Default::default(),
 	}
 }

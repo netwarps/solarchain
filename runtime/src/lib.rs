@@ -98,7 +98,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 103,
+	spec_version: 104,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -364,27 +364,27 @@ impl pallet_contracts::Config for Runtime {
 
 // Define the types required by the Scheduler pallet.
 parameter_types! {
-    pub MaximumSchedulerWeight: Weight = 10_000_000;
-    pub const MaxScheduledPerBlock: u32 = 50;
+	pub MaximumSchedulerWeight: Weight = 10_000_000;
+	pub const MaxScheduledPerBlock: u32 = 50;
 }
 
 // Configure the runtime's implementation of the Scheduler pallet.
 impl pallet_scheduler::Config for Runtime {
-    type Event = Event;
-    type Origin = Origin;
-    type PalletsOrigin = OriginCaller;
-    type Call = Call;
-    type MaximumWeight = MaximumSchedulerWeight;
-    type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
+	type Event = Event;
+	type Origin = Origin;
+	type PalletsOrigin = OriginCaller;
+	type Call = Call;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
 	type OriginPrivilegeCmp = frame_support::traits::EqualPrivilegeOnly;
-    type MaxScheduledPerBlock = MaxScheduledPerBlock;
-    type WeightInfo = ();
+	type MaxScheduledPerBlock = MaxScheduledPerBlock;
+	type WeightInfo = ();
 }
 
 parameter_types! {
 	pub const MaxTokenMetaLength: u32 = 128;
-    pub const MaxTokens: u128 = 10_000_000_000u128;
-    pub const MaxTokensPerUser: u64 = 1_000_000u64;
+	pub const MaxTokens: u128 = 10_000_000_000u128;
+	pub const MaxTokensPerUser: u64 = 1_000_000u64;
 }
 
 /// Configure the pallet-nft in pallets/nft.

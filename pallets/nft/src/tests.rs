@@ -8,24 +8,60 @@ use sp_core::H256;
 fn mint() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(SUT::total(), 0);
-		assert_eq!(SUT::total_for_account(1), 0);
-		assert_eq!(<SUT as UniqueAssets<_>>::total(), 0);
-		assert_eq!(<SUT as UniqueAssets<_>>::total_for_account(&1), 0);
+		assert_eq!(SUT::total_of_account(1), 0);
+
+		assert_eq!(SUT::total(), 0);
+		assert_eq!(SUT::total_of_account(&1), 0);
 		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 0);
 
 		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::default(), None));
 
 		assert_eq!(SUT::total(), 1);
-		assert_eq!(<SUT as UniqueAssets<_>>::total(), 1);
+		assert_eq!(SUT::total(), 1);
 		assert_eq!(SUT::burned(), 0);
-		assert_eq!(<SUT as UniqueAssets<_>>::burned(), 0);
-		assert_eq!(SUT::total_for_account(1), 1);
-		assert_eq!(<SUT as UniqueAssets<_>>::total_for_account(&1), 1);
-		let tokens_for_account = SUT::tokens_for_account::<u64>(1);
-		assert_eq!(tokens_for_account.len(), 1);
-		assert_eq!(tokens_for_account[0], Vec::<u8>::default().blake2_256().into());
-		//assert_eq!(tokens_for_account[0].1, Vec::<u8>::default());
+		assert_eq!(SUT::burned(), 0);
+		assert_eq!(SUT::total_of_account(1), 1);
+		assert_eq!(SUT::total_of_account(&1), 1);
+
+		let assets_for_account = SUT::assets_of_account(&1);
+		assert_eq!(assets_for_account.len(), 1);
+		assert_eq!(assets_for_account[0], Vec::<u8>::default().blake2_256().into());
+		//assert_eq!(assets_for_account[0].1, Vec::<u8>::default());
 		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 1);
+	});
+}
+
+#[test]
+fn mint2() {
+	new_test_ext().execute_with(|| {
+		assert_eq!(SUT::total(), 0);
+		assert_eq!(SUT::total_of_account(&1), 0);
+
+		let v1 = vec![1u8];
+		let v2 = vec![2u8];
+
+		assert_ok!(SUT::mint(Origin::root(), 1, v1.clone(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, v2.clone(), None));
+
+		assert_eq!(SUT::total(), 2);
+		assert_eq!(SUT::total_of_account(&1), 2);
+
+		let assets_for_account = SUT::assets_of_account(&1);
+		assert_eq!(assets_for_account.len(), 2);
+		assert_eq!(SUT::owner_of(&assets_for_account[0]), 1);
+		assert_eq!(SUT::owner_of(&assets_for_account[1]), 1);
+
+		let asset1 = SUT::asset_by_account_by_index(&1, 0).unwrap();
+		let asset2 = SUT::asset_by_account_by_index(&1, 1).unwrap();
+
+		assert_eq!(asset1, v1.blake2_256().into());
+		assert_eq!(asset2, v2.blake2_256().into());
+
+		// do a transfer
+		assert_ok!(SUT::transfer(Origin::signed(1), 2, assets_for_account[1]));
+		let assets_for_account2 = SUT::assets_of_account(&2);
+		assert_eq!(assets_for_account2.len(), 1);
+		assert_eq!(assets_for_account2[0], assets_for_account[1]);
 	});
 }
 
@@ -93,16 +129,16 @@ fn mint_err_meta() {
 fn burn() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::from("test"), None));
-		assert_eq!(SUT::total_for_account(1), 1);
+		assert_eq!(SUT::total_of_account(&1), 1);
 
-		let assets = SUT::assets_for_account(&(1 as u64));
+		let assets = SUT::assets_of_account(&(1 as u64));
 
 		assert_ok!(SUT::burn(Origin::signed(1), assets[0]));
 
 		assert_eq!(SUT::total(), 0);
 		assert_eq!(SUT::burned(), 1);
-		assert_eq!(SUT::total_for_account(1), 0);
-		assert_eq!(SUT::tokens_for_account::<u64>(1), vec![]);
+		assert_eq!(SUT::total_of_account(&1), 0);
+		assert_eq!(SUT::assets_of_account(&1), vec![]);
 		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 0);
 	});
 }
@@ -134,20 +170,20 @@ fn transfer() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(SUT::mint(Origin::root(), 1, "test".into(), None));
 
-		let assets = SUT::assets_for_account(&(1 as u64));
+		let assets = SUT::assets_of_account(&(1 as u64));
 
 		assert_ok!(SUT::transfer(Origin::signed(1), 2, assets[0]));
 
 		assert_eq!(SUT::total(), 1);
 		assert_eq!(SUT::burned(), 0);
-		assert_eq!(SUT::total_for_account(1), 0);
-		assert_eq!(SUT::total_for_account(2), 1);
-		assert_eq!(SUT::tokens_for_account::<u64>(1), vec![]);
-		let tokens_for_account = SUT::tokens_for_account::<u64>(2);
-		assert_eq!(tokens_for_account.len(), 1);
-		assert_eq!(tokens_for_account[0], assets[0]);
-		//assert_eq!(tokens_for_account[0].1, Vec::<u8>::from("test"));
-		assert_eq!(SUT::token_by_id::<H256>(tokens_for_account[0]).owner, 2);
+		assert_eq!(SUT::total_of_account(&1), 0);
+		assert_eq!(SUT::total_of_account(&2), 1);
+		assert_eq!(SUT::assets_of_account(&1), vec![]);
+		let assets_for_account = SUT::assets_of_account(&2);
+		assert_eq!(assets_for_account.len(), 1);
+		assert_eq!(assets_for_account[0], assets[0]);
+		//assert_eq!(assets_for_account[0].1, Vec::<u8>::from("test"));
+		assert_eq!(SUT::token_by_id::<H256>(assets_for_account[0]).owner, 2);
 	});
 }
 

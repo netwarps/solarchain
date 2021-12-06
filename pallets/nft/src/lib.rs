@@ -92,7 +92,6 @@ pub mod pallet {
 			+ FullCodec
 			+ MaybeSerializeDeserialize
 			+ TypeInfo;
-
 		/// The maximum length of this type of token that may exist.
 		#[pallet::constant]
 		type TokenMetaLimit: Get<u32>;
@@ -122,16 +121,23 @@ pub mod pallet {
 	pub type Burned<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn total_for_account)]
+	#[pallet::getter(fn total_of_account)]
 	/// The total number of this type of token owned by an account.
-	pub type TotalForAccount<T: Config> =
+	pub type TotalOfAccount<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, u64, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn tokens_for_account)]
 	/// A mapping from an account to a list of all of the tokens of this type that are owned by it.
-	pub type TokensForAccount<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, Vec<TokenId<T>>, ValueQuery>;
+	pub type TokensForAccount<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Twox64Concat,
+		u64,
+		TokenId<T>,
+		OptionQuery,
+	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn token_by_id)]
@@ -147,11 +153,11 @@ pub mod pallet {
 	//     /// The total number of this type of token that has been burned (may overflow).
 	//     Burned get(fn burned): u128 = 0;
 	//     /// The total number of this type of token owned by an account.
-	//     TotalForAccount get(fn total_for_account): map hasher(blake2_128_concat) T::AccountId =>
+	//     TotalOfAccount get(fn total_for_account): map hasher(blake2_128_concat) T::AccountId =>
 	// u64 = 0;     /// A mapping from an account to a list of all of the tokens of this type that
 	// are owned by it.     TokensForAccount get(fn tokens_for_account): map
 	// hasher(blake2_128_concat) T::AccountId => Vec<Token<T, I>>;     /// A mapping from a token ID
-	// to the account that owns it.     TokenById get(fn token_by_id): map hasher(identity)
+	// to the account that owns it.     TokenById get(fn _token_by_id): map hasher(identity)
 	// TokenId<T> => T::AccountId; }
 
 	#[pallet::genesis_config]
@@ -175,29 +181,8 @@ pub mod pallet {
 						.expect("Token mint cannot fail during genesis");
 				}
 			})
-			// self.tokens.iter().for_each(|token_class| {
-			//     let class_id = Pallet::<T>::create_class(&token_class.0, token_class.1.to_vec(),
-			// token_class.2.clone())         .expect("Create class cannot fail while building
-			// genesis");     for (account_id, token_metadata, token_data) in &token_class.3 {
-			//         Pallet::<T>::mint(account_id, class_id, token_metadata.to_vec(),
-			// token_data.clone())             .expect("Token mint cannot fail during genesis");
-			//     }
-			// })
 		}
 	}
-	// add_extra_genesis {
-	//     config(balances): Vec<(T::AccountId, Vec<T::TokenInfo>)>;
-	//     build(|config: &GenesisConfig<T, I>| {
-	//         for (who, assets) in config.balances.iter() {
-	//             for asset in assets {
-	//                 match <Module::<T, I> as UniqueAssets::<T::AccountId>>::mint(who,
-	// asset.clone()) {                     Ok(_) => {}
-	//                     Err(err) => { std::panic::panic_any(err) },
-	//                 }
-	//             }
-	//         }
-	//     });
-	// }
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -209,20 +194,6 @@ pub mod pallet {
 		/// Ownership of the token has been transferred to the account.
 		Transferred(TokenId<T>, T::AccountId),
 	}
-
-	// decl_event!(
-	// pub enum Event<T, I = DefaultInstance>
-	// where
-	//     TokenId = <T as frame_system::Config>::Hash,
-	//     AccountId = <T as frame_system::Config>::AccountId,
-	// {
-	//     /// The token has been burned.
-	//     Burned(TokenId),
-	//     /// The token has been minted and distributed to the account.
-	//     Minted(TokenId, AccountId),
-	//     /// Ownership of the token has been transferred to the account.
-	//     Transferred(TokenId, AccountId),
-	// }
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
@@ -243,22 +214,6 @@ pub mod pallet {
 		// type of token exceeds the limit.
 		TooLongMetadata,
 	}
-
-	// decl_error! {
-	// pub enum Error for Module<T: Config<I>, I: Instance> {
-	//     // Thrown when there is an attempt to mint a duplicate token.
-	//     TokenExists,
-	//     // Thrown when there is an attempt to burn or transfer a nonexistent token.
-	//     NonexistentToken,
-	//     // Thrown when someone who is not the owner of a token attempts to transfer or burn it.
-	//     NotTokenOwner,
-	//     // Thrown when the token admin attempts to mint a token and the maximum number of this
-	//     // type of token already exists.
-	//     TooManyTokens,
-	//     // Thrown when an attempt is made to mint or transfer a token to an account that already
-	//     // owns the maximum number of this type of token.
-	//     TooManyTokensForAccount,
-	// }
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	// These functions materialize as "extrinsics", which are often compared to transactions.
@@ -369,71 +324,6 @@ pub mod pallet {
 			Ok(())
 		}
 	}
-
-	//
-	// decl_module! {
-	// pub struct Module<T: Config<I>, I: Instance = DefaultInstance> for enum Call where origin:
-	// T::Origin {     type Error = Error<T, I>;
-	//     fn deposit_event() = default;
-	//
-	//     /// Create a new token from the provided token info and identify the specified
-	//     /// account as its owner. The ID of the new token will be equal to the hash of the info
-	//     /// that defines it, as calculated by the runtime system's hashing algorithm.
-	//     ///
-	//     /// The dispatch origin for this call must be the token admin.
-	//     ///
-	//     /// This function will throw an error if it is called with token info that describes
-	//     /// an existing (duplicate) token, if the maximum number of this type of token already
-	//     /// exists or if the specified owner already owns the maximum number of this type of
-	//     /// token.
-	//     ///
-	//     /// - `owner_account`: Receiver of the token.
-	//     /// - `token_info`: The information that defines the token.
-	//     #[weight = 10_000]
-	//     pub fn mint(origin, owner_account: T::AccountId, token_info: T::TokenInfo) ->
-	// dispatch::DispatchResult {         T::TokenAdmin::ensure_origin(origin)?;
-	//
-	//         let token_id = <Self as UniqueAssets<_>>::mint(&owner_account, token_info)?;
-	//         Self::deposit_event(Event::Minted(token_id, owner_account.clone()));
-	//         Ok(())
-	//     }
-	//
-	//     /// Destroy the specified token.
-	//     ///
-	//     /// The dispatch origin for this call must be the token owner.
-	//     ///
-	//     /// - `token_id`: The hash (calculated by the runtime system's hashing algorithm)
-	//     ///   of the info that defines the token to destroy.
-	//     #[weight = 10_000]
-	//     pub fn burn(origin, token_id: TokenId<T>) -> dispatch::DispatchResult {
-	//         let who = ensure_signed(origin)?;
-	//         ensure!(who == Self::token_by_id(&token_id), Error::<T, I>::NotTokenOwner);
-	//
-	//         <Self as UniqueAssets<_>>::burn(&token_id)?;
-	//         Self::deposit_event(Event::Burned(token_id.clone()));
-	//         Ok(())
-	//     }
-	//
-	//     /// Transfer a token to a new owner.
-	//     ///
-	//     /// The dispatch origin for this call must be the token owner.
-	//     ///
-	//     /// This function will throw an error if the new owner already owns the maximum
-	//     /// number of this type of token.
-	//     ///
-	//     /// - `dest_account`: Receiver of the token.
-	//     /// - `token_id`: The hash (calculated by the runtime system's hashing algorithm)
-	//     ///   of the info that defines the token to destroy.
-	//     #[weight = 10_000]
-	//     pub fn transfer(origin, dest_account: T::AccountId, token_id: TokenId<T>) ->
-	// dispatch::DispatchResult {         let who = ensure_signed(origin)?;
-	//         ensure!(who == Self::token_by_id(&token_id), Error::<T, I>::NotTokenOwner);
-	//
-	//         <Self as UniqueAssets<_>>::transfer(&dest_account, &token_id)?;
-	//         Self::deposit_event(Event::Transferred(token_id.clone(), dest_account.clone()));
-	//         Ok(())
-	//     }
-	// }
 }
 
 impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
@@ -450,12 +340,18 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		Self::burned()
 	}
 
-	fn total_for_account(account: &T::AccountId) -> u64 {
-		Self::total_for_account(account)
+	fn total_of_account(account: &T::AccountId) -> u64 {
+		Self::total_of_account(account)
 	}
 
-	fn assets_for_account(account: &T::AccountId) -> Vec<Self::AssetId> {
-		Self::tokens_for_account(account)
+	fn assets_of_account(account: &T::AccountId) -> Vec<Self::AssetId> {
+		TokensForAccount::<T>::iter_prefix(account)
+			.map(|(_key, value)| value)
+			.collect::<Vec<_>>()
+	}
+
+	fn asset_by_account_by_index(account: &T::AccountId, index: u64) -> Option<Self::AssetId> {
+		Self::tokens_for_account(account, index)
 	}
 
 	fn owner_of(token_id: &TokenId<T>) -> T::AccountId {
@@ -476,7 +372,7 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		ensure!(!TokenById::<T>::contains_key(&token_id), Error::<T>::TokenExists);
 
 		ensure!(
-			Self::total_for_account(owner_account) < T::UserTokenLimit::get(),
+			Self::total_of_account(owner_account) < T::UserTokenLimit::get(),
 			Error::<T>::TooManyTokensForAccount
 		);
 
@@ -488,7 +384,7 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 
 		let mut index: u64 = 0;
 		Total::<T>::mutate(|total| *total += 1);
-		TotalForAccount::<T>::mutate(owner_account, |total| {
+		TotalOfAccount::<T>::mutate(owner_account, |total| {
 			index = *total;
 			*total += 1
 		});
@@ -496,29 +392,26 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		// construct the new token
 		let token =
 			Token { owner: owner_account.clone(), pos: index, info: token_info, meta: token_meta };
-		TokenById::<T>::insert(&token_id, token);
 
 		// put onto the owner's account
-		TokensForAccount::<T>::mutate(owner_account, |tokens| {
-			tokens.push(token_id);
-		});
+		TokensForAccount::<T>::insert(owner_account, index, token_id);
+		// insert into token_by_id map
+		TokenById::<T>::insert(&token_id, token);
 
 		Ok(token_id)
 	}
 
 	fn burn(token_id: &TokenId<T>) -> dispatch::DispatchResult {
-		let token = Self::token_by_id(&token_id);
+		let token = Self::token_by_id(token_id);
 		ensure!(token.owner != T::AccountId::default(), Error::<T>::NonexistentToken);
 
 		Total::<T>::mutate(|total| *total -= 1);
 		Burned::<T>::mutate(|total| *total += 1);
-		TotalForAccount::<T>::mutate(&token.owner, |total| *total -= 1);
-		TokensForAccount::<T>::mutate(&token.owner, |tokens| {
-			//let _ = tokens.get(pos).expect("token must be there");
-			let pos = token.pos as usize;
-			let _ = tokens.swap_remove(pos);
-		});
-		TokenById::<T>::remove(&token_id);
+		TotalOfAccount::<T>::mutate(&token.owner, |total| *total -= 1);
+		// remove from tokens_by_account map
+		TokensForAccount::<T>::remove(&token.owner, token.pos);
+		// remove from token_by_id map
+		TokenById::<T>::remove(token_id);
 
 		Ok(())
 	}
@@ -528,28 +421,26 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		ensure!(token.owner != T::AccountId::default(), Error::<T>::NonexistentToken);
 
 		ensure!(
-			Self::total_for_account(dest_account) < T::UserTokenLimit::get(),
+			Self::total_of_account(dest_account) < T::UserTokenLimit::get(),
 			Error::<T>::TooManyTokensForAccount
 		);
 
-		TotalForAccount::<T>::mutate(&token.owner, |total| *total -= 1);
-		TotalForAccount::<T>::mutate(dest_account, |total| *total += 1);
+		TotalOfAccount::<T>::mutate(&token.owner, |total| *total -= 1);
+		let mut new_index: u64 = 0;
+		TotalOfAccount::<T>::mutate(dest_account, |total| {
+			new_index = *total;
+			*total += 1
+		});
 
-		// step 1: remove token from the owner
-		TokensForAccount::<T>::mutate(&token.owner, |tokens| {
-			let pos = token.pos as usize;
-			tokens.swap_remove(pos);
-		});
+		// step 1: remove token from the owner's position
+		TokensForAccount::<T>::remove(&token.owner, token.pos);
 		// step 2: push token to the new owner
-		let mut new_pos = 0;
-		TokensForAccount::<T>::mutate(&dest_account, |tokens| {
-			tokens.push(token_id.clone());
-			new_pos = tokens.len() - 1;
-		});
-		// step 3: update token_by_id
+		TokensForAccount::<T>::insert(&dest_account, new_index, token_id);
+
+		// step 3: update _token_by_id
 		TokenById::<T>::mutate(token_id, |token| {
 			token.owner = dest_account.clone();
-			token.pos = new_pos as u64;
+			token.pos = new_index;
 		});
 
 		Ok(())

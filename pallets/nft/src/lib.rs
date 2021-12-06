@@ -55,8 +55,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
+//#[cfg(feature = "runtime-benchmarks")]
+//mod benchmarking;
 
 #[derive(Debug, Default, Encode, Decode, TypeInfo)]
 pub struct Token<TAccountId, TPos, TInfo> {
@@ -436,8 +436,7 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		TokensForAccount::<T>::remove(&token.owner, token.pos);
 		// step 2: push token to the new owner
 		TokensForAccount::<T>::insert(&dest_account, new_index, token_id);
-
-		// step 3: update _token_by_id
+		// step 3: update token_by_id
 		TokenById::<T>::mutate(token_id, |token| {
 			token.owner = dest_account.clone();
 			token.pos = new_index;

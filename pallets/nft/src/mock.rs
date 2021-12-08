@@ -58,7 +58,7 @@ impl system::Config for Test {
 }
 
 parameter_types! {
-	pub const MaxTokenMetaLength: u32 = 32;
+	pub const MaxTokenMetaLength: u32 = 1024 * 1024;
 	pub const MaxTokens: u128 = 5;
 	pub const MaxTokensPerUser: u64 = 2;
 }
@@ -72,7 +72,6 @@ parameter_types! {
 impl Config for Test {
 	type Event = ();
 	type TokenAdmin = frame_system::EnsureRoot<Self::AccountId>;
-	type TokenInfo = Vec<u8>;
 	type TokenMetaLimit = MaxTokenMetaLength;
 	type TokenLimit = MaxTokens;
 	type UserTokenLimit = MaxTokensPerUser;

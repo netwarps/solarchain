@@ -382,7 +382,7 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxTokenMetaLength: u32 = 128;
+	pub const MaxTokenMetaLength: u32 = 1024 * 1024;
 	pub const MaxTokens: u128 = 10_000_000_000u128;
 	pub const MaxTokensPerUser: u64 = 1_000_000u64;
 }
@@ -390,7 +390,6 @@ parameter_types! {
 /// Configure the pallet-nft in pallets/nft.
 impl pallet_nft::Config for Runtime {
 	type TokenAdmin = frame_system::EnsureRoot<AccountId>;
-	type TokenInfo = Vec<u8>;
 	type TokenMetaLimit = MaxTokenMetaLength;
 	type TokenLimit = MaxTokens;
 	type UserTokenLimit = MaxTokensPerUser;
@@ -591,6 +590,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_nft, Nft);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -624,6 +624,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			add_benchmark!(params, batches, pallet_nft, Nft);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

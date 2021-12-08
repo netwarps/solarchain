@@ -24,6 +24,7 @@ frame-support = { git = "https://github.com/paritytech/substrate",version = "4.0
 frame-system = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "frame-system", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "sp-runtime", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "sp-std", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "frame-benchmarking", default-features = false, optional = true }
 
 [dev-dependencies]
 sp-core = { default-features = false, git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "sp-core" }
@@ -38,5 +39,7 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'sp-runtime/std',
+	"frame-benchmarking/std",
     'sp-std/std',
 ]
+runtime-benchmarks = ["frame-benchmarking"]

@@ -37,17 +37,13 @@ pub use pallet::*;
 use scale_info::TypeInfo;
 
 use codec::{Decode, Encode};
-use frame_support::{
-	dispatch, ensure,
-	traits::{EnsureOrigin, Get},
-	Hashable,
-};
+use frame_support::{dispatch, ensure, traits::{EnsureOrigin, Get}, BoundedVec};
 use frame_system::ensure_signed;
-use sp_runtime::traits::{Hash, Member};
 use sp_std::{fmt::Debug, vec::Vec};
 
 pub mod nft;
 pub use crate::nft::UniqueAssets;
+use sp_std::convert::TryInto;
 
 #[cfg(test)]
 mod mock;
@@ -55,25 +51,23 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-//#[cfg(feature = "runtime-benchmarks")]
-//mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 #[derive(Debug, Default, Encode, Decode, TypeInfo)]
-pub struct Token<TAccountId, TPos, TInfo> {
+#[scale_info(skip_type_params(TMetaLimit))]
+pub struct Token<TAccountId, TMetaLimit: Get<u32>> {
 	/// Token owner
 	pub owner: TAccountId,
 	/// Token position in owner's storage
-	pub pos: TPos,
-	/// Token info
-	pub info: TInfo,
+	pub pos: u64,
 	/// Token meta data
-	pub meta: Option<Vec<u8>>,
+	pub meta: Option<BoundedVec<u8, TMetaLimit>>,
 }
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use codec::FullCodec;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
@@ -84,14 +78,6 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// The dispatch origin that is able to mint new instances of this type of token.
 		type TokenAdmin: EnsureOrigin<Self::Origin>;
-		/// The data type that is used to describe this type of token.
-		type TokenInfo: Hashable
-			+ Member
-			+ Debug
-			+ Default
-			+ FullCodec
-			+ MaybeSerializeDeserialize
-			+ TypeInfo;
 		/// The maximum length of this type of token that may exist.
 		#[pallet::constant]
 		type TokenMetaLimit: Get<u32>;
@@ -104,11 +90,16 @@ pub mod pallet {
 	}
 
 	/// The runtime system's hashing algorithm is used to uniquely identify tokens.
-	pub type TokenId<T> = <T as frame_system::Config>::Hash;
+	pub type TokenId = u128;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
+
+	/// Next available token ID.
+	#[pallet::storage]
+	#[pallet::getter(fn next_token_id)]
+	pub type NextTokenId<T: Config> = StorageValue<_, TokenId, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn total)]
@@ -135,7 +126,7 @@ pub mod pallet {
 		T::AccountId,
 		Twox64Concat,
 		u64,
-		TokenId<T>,
+		TokenId,
 		OptionQuery,
 	>;
 
@@ -144,7 +135,7 @@ pub mod pallet {
 	/// A mapping from a token ID to the token's data, including the owner, position to owner's
 	/// repository and meta data.
 	pub type TokenById<T: Config> =
-		StorageMap<_, Identity, TokenId<T>, Token<T::AccountId, u64, T::TokenInfo>, ValueQuery>;
+		StorageMap<_, Identity, TokenId, Token<T::AccountId, T::TokenMetaLimit>, OptionQuery>;
 
 	// decl_storage! {
 	// trait Store for Module<T: Config<I>, I: Instance = DefaultInstance> as Token {
@@ -162,7 +153,7 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub tokens: Vec<(T::AccountId, Vec<(T::TokenInfo, Option<Vec<u8>>)>)>,
+		pub tokens: Vec<(T::AccountId, Vec<Option<Vec<u8>>>)>,
 	}
 
 	#[cfg(feature = "std")]
@@ -176,8 +167,8 @@ pub mod pallet {
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
 			self.tokens.iter().for_each(|(account_id, infos)| {
-				for (info, meta) in infos {
-					<Pallet<T> as UniqueAssets<_>>::mint(account_id, info.clone(), meta.clone())
+				for meta in infos {
+					<Pallet<T> as UniqueAssets<_>>::mint(account_id, meta.clone())
 						.expect("Token mint cannot fail during genesis");
 				}
 			})
@@ -188,11 +179,11 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// The token has been burned.
-		Burned(TokenId<T>),
+		Burned(TokenId),
 		/// The token has been minted and distributed to the account.
-		Minted(TokenId<T>, T::AccountId),
+		Minted(TokenId, T::AccountId),
 		/// Ownership of the token has been transferred to the account.
-		Transferred(TokenId<T>, T::AccountId),
+		Transferred(TokenId, T::AccountId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -220,43 +211,6 @@ pub mod pallet {
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
-		// #[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		// pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
-		//     // Check that the extrinsic was signed and get the signer.
-		//     // This function will return an error if the extrinsic is not signed.
-		//     // https://substrate.dev/docs/en/knowledgebase/runtime/origin
-		//     let who = ensure_signed(origin)?;
-		//
-		//     // Update storage.
-		//     <Something<T>>::put(something);
-		//
-		//     // Emit an event.
-		//     Self::deposit_event(Event::SomethingStored(something, who));
-		//     // Return a successful DispatchResultWithPostInfo
-		//     Ok(())
-		// }
-
-		/// An example dispatchable that may throw a custom error.
-		// #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		// pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
-		//     let _who = ensure_signed(origin)?;
-		//
-		//     // Read a value from storage.
-		//     match <Something<T>>::get() {
-		//         // Return an error if the value has not been set.
-		//         None => Err(Error::<T>::NoneValue)?,
-		//         Some(old) => {
-		//             // Increment the value read from storage; will error in the event of
-		// overflow.             let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-		//             // Update the value in storage with the incremented result.
-		//             <Something<T>>::put(new);
-		//             Ok(())
-		//         },
-		//     }
-		// }
-
 		/// Create a new token from the provided token info and identify the specified
 		/// account as its owner. The ID of the new token will be equal to the hash of the info
 		/// that defines it, as calculated by the runtime system's hashing algorithm.
@@ -274,12 +228,11 @@ pub mod pallet {
 		pub fn mint(
 			origin: OriginFor<T>,
 			owner_account: T::AccountId,
-			token_info: T::TokenInfo,
 			token_meta: Option<Vec<u8>>,
 		) -> DispatchResult {
 			T::TokenAdmin::ensure_origin(origin)?;
 
-			let token_id = <Self as UniqueAssets<_>>::mint(&owner_account, token_info, token_meta)?;
+			let token_id = <Self as UniqueAssets<_>>::mint(&owner_account, token_meta)?;
 			Self::deposit_event(Event::Minted(token_id, owner_account.clone()));
 			Ok(())
 		}
@@ -291,9 +244,9 @@ pub mod pallet {
 		/// - `token_id`: The hash (calculated by the runtime system's hashing algorithm) of the
 		///   info that defines the token to destroy.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn burn(origin: OriginFor<T>, token_id: TokenId<T>) -> DispatchResult {
+		pub fn burn(origin: OriginFor<T>, token_id: TokenId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(who == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
+			ensure!(Some(who) == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
 
 			<Self as UniqueAssets<_>>::burn(&token_id)?;
 			Self::deposit_event(Event::Burned(token_id.clone()));
@@ -314,10 +267,10 @@ pub mod pallet {
 		pub fn transfer(
 			origin: OriginFor<T>,
 			dest_account: T::AccountId,
-			token_id: TokenId<T>,
+			token_id: TokenId,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(who == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
+			ensure!(Some(who) == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
 
 			<Self as UniqueAssets<_>>::transfer(&dest_account, &token_id)?;
 			Self::deposit_event(Event::Transferred(token_id.clone(), dest_account.clone()));
@@ -327,8 +280,7 @@ pub mod pallet {
 }
 
 impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
-	type AssetId = TokenId<T>;
-	type AssetInfo = T::TokenInfo;
+	type AssetId = TokenId;
 	type AssetLimit = T::TokenLimit;
 	type UserAssetLimit = T::UserTokenLimit;
 
@@ -354,22 +306,18 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		Self::tokens_for_account(account, index)
 	}
 
-	fn owner_of(token_id: &TokenId<T>) -> T::AccountId {
-		Self::token_by_id(token_id).owner
+	fn owner_of(token_id: &TokenId) -> Option<T::AccountId> {
+		Self::token_by_id(token_id).map(|t| t.owner)
 	}
 
-	fn token_metadata(token_id: &TokenId<T>) -> Option<Vec<u8>> {
-		Self::token_by_id(token_id).meta
+	fn token_metadata(token_id: &TokenId) -> Option<Vec<u8>> {
+		Self::token_by_id(token_id).map_or(None, |t| t.meta.map(|m| m.into()))
 	}
 
 	fn mint(
 		owner_account: &T::AccountId,
-		token_info: T::TokenInfo,
 		token_meta: Option<Vec<u8>>,
-	) -> dispatch::result::Result<TokenId<T>, dispatch::DispatchError> {
-		let token_id = T::Hashing::hash_of(&token_info);
-
-		ensure!(!TokenById::<T>::contains_key(&token_id), Error::<T>::TokenExists);
+	) -> dispatch::result::Result<TokenId, dispatch::DispatchError> {
 
 		ensure!(
 			Self::total_of_account(owner_account) < T::UserTokenLimit::get(),
@@ -381,6 +329,18 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		if let Some(ref meta) = token_meta {
 			ensure!(meta.len() <= T::TokenMetaLimit::get() as usize, Error::<T>::TooLongMetadata);
 		}
+		let bounded_meta: Option<BoundedVec<u8, T::TokenMetaLimit>> = {
+			if let Some(meta) = token_meta {
+				Some(meta.try_into().map_err(|_| Error::<T>::TooLongMetadata)?)
+            } else {
+				None
+			}
+		};
+
+		let token_id = NextTokenId::<T>::try_mutate(|id| -> Result<TokenId, dispatch::DispatchError> {
+			*id = id.checked_add(1).ok_or(Error::<T>::TooManyTokens)?;
+			Ok(*id)
+		})?;
 
 		let mut index: u64 = 0;
 		Total::<T>::mutate(|total| *total += 1);
@@ -391,7 +351,7 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 
 		// construct the new token
 		let token =
-			Token { owner: owner_account.clone(), pos: index, info: token_info, meta: token_meta };
+			Token { owner: owner_account.clone(), pos: index, meta: bounded_meta };
 
 		// put onto the owner's account
 		TokensForAccount::<T>::insert(owner_account, index, token_id);
@@ -401,9 +361,10 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		Ok(token_id)
 	}
 
-	fn burn(token_id: &TokenId<T>) -> dispatch::DispatchResult {
+	fn burn(token_id: &TokenId) -> dispatch::DispatchResult {
 		let token = Self::token_by_id(token_id);
-		ensure!(token.owner != T::AccountId::default(), Error::<T>::NonexistentToken);
+		ensure!(token.is_some(), Error::<T>::NonexistentToken);
+		let token = token.unwrap();
 
 		Total::<T>::mutate(|total| *total -= 1);
 		Burned::<T>::mutate(|total| *total += 1);
@@ -416,9 +377,11 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn transfer(dest_account: &T::AccountId, token_id: &TokenId<T>) -> dispatch::DispatchResult {
+	fn transfer(dest_account: &T::AccountId, token_id: &TokenId) -> dispatch::DispatchResult {
 		let token = Self::token_by_id(&token_id);
-		ensure!(token.owner != T::AccountId::default(), Error::<T>::NonexistentToken);
+		ensure!(token.is_some(), Error::<T>::NonexistentToken);
+
+		let mut token = token.unwrap();
 
 		ensure!(
 			Self::total_of_account(dest_account) < T::UserTokenLimit::get(),
@@ -436,11 +399,12 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		TokensForAccount::<T>::remove(&token.owner, token.pos);
 		// step 2: push token to the new owner
 		TokensForAccount::<T>::insert(&dest_account, new_index, token_id);
+
 		// step 3: update token_by_id
-		TokenById::<T>::mutate(token_id, |token| {
-			token.owner = dest_account.clone();
-			token.pos = new_index;
-		});
+		token.owner = dest_account.clone();
+		token.pos = new_index;
+
+		TokenById::<T>::insert(token_id, token);
 
 		Ok(())
 	}

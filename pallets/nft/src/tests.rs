@@ -1,33 +1,32 @@
 // Tests to be written here
 
 use crate::{mock::*, nft::UniqueAssets, *};
-use frame_support::{assert_err, assert_ok, Hashable};
-use sp_core::H256;
+use frame_support::{assert_err, assert_ok};
 
 #[test]
 fn mint() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(SUT::total(), 0);
-		assert_eq!(SUT::total_of_account(1), 0);
+		assert_eq!(SUT::total_of_account(&1), 0);
 
 		assert_eq!(SUT::total(), 0);
 		assert_eq!(SUT::total_of_account(&1), 0);
-		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 0);
+		assert!(SUT::token_by_id(1).is_none());
 
-		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::default(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
-		assert_eq!(SUT::total(), 1);
-		assert_eq!(SUT::total(), 1);
+		assert_eq!(SUT::total(), 1, "total 1");
+		assert_eq!(SUT::total(), 1, "total 2");
 		assert_eq!(SUT::burned(), 0);
 		assert_eq!(SUT::burned(), 0);
-		assert_eq!(SUT::total_of_account(1), 1);
-		assert_eq!(SUT::total_of_account(&1), 1);
+		assert_eq!(SUT::total_of_account(&1), 1, "total of account 1");
+		assert_eq!(SUT::total_of_account(&1), 1, "total of account 2");
 
 		let assets_for_account = SUT::assets_of_account(&1);
-		assert_eq!(assets_for_account.len(), 1);
-		assert_eq!(assets_for_account[0], Vec::<u8>::default().blake2_256().into());
+		assert_eq!(assets_for_account.len(), 1, "assets for account 1");
+		assert_eq!(assets_for_account[0], 1, "assets for account 2");
 		//assert_eq!(assets_for_account[0].1, Vec::<u8>::default());
-		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 1);
+		assert_eq!(SUT::token_by_id(1).map(|t| t.owner), Some(1));
 	});
 }
 
@@ -37,25 +36,22 @@ fn mint2() {
 		assert_eq!(SUT::total(), 0);
 		assert_eq!(SUT::total_of_account(&1), 0);
 
-		let v1 = vec![1u8];
-		let v2 = vec![2u8];
-
-		assert_ok!(SUT::mint(Origin::root(), 1, v1.clone(), None));
-		assert_ok!(SUT::mint(Origin::root(), 1, v2.clone(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		assert_eq!(SUT::total(), 2);
 		assert_eq!(SUT::total_of_account(&1), 2);
 
 		let assets_for_account = SUT::assets_of_account(&1);
 		assert_eq!(assets_for_account.len(), 2);
-		assert_eq!(SUT::owner_of(&assets_for_account[0]), 1);
-		assert_eq!(SUT::owner_of(&assets_for_account[1]), 1);
+		assert_eq!(SUT::owner_of(&assets_for_account[0]), Some(1));
+		assert_eq!(SUT::owner_of(&assets_for_account[1]), Some(1));
 
 		let asset1 = SUT::asset_by_account_by_index(&1, 0).unwrap();
 		let asset2 = SUT::asset_by_account_by_index(&1, 1).unwrap();
 
-		assert_eq!(asset1, v1.blake2_256().into());
-		assert_eq!(asset2, v2.blake2_256().into());
+		assert_eq!(asset1, 1);
+		assert_eq!(asset2, 2);
 
 		// do a transfer
 		assert_ok!(SUT::transfer(Origin::signed(1), 2, assets_for_account[1]));
@@ -69,32 +65,34 @@ fn mint2() {
 fn mint_err_non_admin() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			SUT::mint(Origin::signed(1), 1, Vec::<u8>::default(), None),
+			SUT::mint(Origin::signed(1), 1, None),
 			sp_runtime::DispatchError::BadOrigin
 		);
 	});
 }
 
+/*
 #[test]
 fn mint_err_dupe() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::default(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		assert_err!(
-			SUT::mint(Origin::root(), 2, Vec::<u8>::default(), None),
+			SUT::mint(Origin::root(), 2, None),
 			Error::<Test>::TokenExists
 		);
 	});
 }
+ */
 
 #[test]
 fn mint_err_max_user() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, vec![], None));
-		assert_ok!(SUT::mint(Origin::root(), 1, vec![0], None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		assert_err!(
-			SUT::mint(Origin::root(), 1, vec![1], None),
+			SUT::mint(Origin::root(), 1, None),
 			Error::<Test>::TooManyTokensForAccount
 		);
 	});
@@ -103,23 +101,23 @@ fn mint_err_max_user() {
 #[test]
 fn mint_err_max() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, vec![], None));
-		assert_ok!(SUT::mint(Origin::root(), 2, vec![0], None));
-		assert_ok!(SUT::mint(Origin::root(), 3, vec![1], None));
-		assert_ok!(SUT::mint(Origin::root(), 4, vec![2], None));
-		assert_ok!(SUT::mint(Origin::root(), 5, vec![3], None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
+		assert_ok!(SUT::mint(Origin::root(), 2, None));
+		assert_ok!(SUT::mint(Origin::root(), 3, None));
+		assert_ok!(SUT::mint(Origin::root(), 4, None));
+		assert_ok!(SUT::mint(Origin::root(), 5, None));
 
-		assert_err!(SUT::mint(Origin::root(), 6, vec![4], None), Error::<Test>::TooManyTokens);
+		assert_err!(SUT::mint(Origin::root(), 6, None), Error::<Test>::TooManyTokens);
 	});
 }
 
 #[test]
 fn mint_err_meta() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, vec![], Some("meta1".into())));
-		assert_ok!(SUT::mint(Origin::root(), 2, vec![0], Some("meta2".into())));
+		assert_ok!(SUT::mint(Origin::root(), 1, Some("meta1".into())));
+		assert_ok!(SUT::mint(Origin::root(), 2, Some("meta2".into())));
 		assert_err!(
-			SUT::mint(Origin::root(), 3, vec![1], Some("012345678901234567890123456789012".into())),
+			SUT::mint(Origin::root(), 3, Some(vec![0u8; 1024 * 1024 + 1])),
 			Error::<Test>::TooLongMetadata
 		);
 	});
@@ -128,7 +126,7 @@ fn mint_err_meta() {
 #[test]
 fn burn() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::from("test"), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 		assert_eq!(SUT::total_of_account(&1), 1);
 
 		let assets = SUT::assets_of_account(&(1 as u64));
@@ -139,17 +137,17 @@ fn burn() {
 		assert_eq!(SUT::burned(), 1);
 		assert_eq!(SUT::total_of_account(&1), 0);
 		assert_eq!(SUT::assets_of_account(&1), vec![]);
-		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 0);
+		assert!(SUT::token_by_id(1).is_none());
 	});
 }
 
 #[test]
 fn burn_err_not_owner() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::default(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		assert_err!(
-			SUT::burn(Origin::signed(2), Vec::<u8>::default().blake2_256().into()),
+			SUT::burn(Origin::signed(2), 1),
 			Error::<Test>::NotTokenOwner
 		);
 	});
@@ -159,7 +157,7 @@ fn burn_err_not_owner() {
 fn burn_err_not_exist() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			SUT::burn(Origin::signed(1), Vec::<u8>::default().blake2_256().into()),
+			SUT::burn(Origin::signed(1), 1),
 			Error::<Test>::NotTokenOwner
 		);
 	});
@@ -168,7 +166,7 @@ fn burn_err_not_exist() {
 #[test]
 fn transfer() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, "test".into(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		let assets = SUT::assets_of_account(&(1 as u64));
 
@@ -183,17 +181,17 @@ fn transfer() {
 		assert_eq!(assets_for_account.len(), 1);
 		assert_eq!(assets_for_account[0], assets[0]);
 		//assert_eq!(assets_for_account[0].1, Vec::<u8>::from("test"));
-		assert_eq!(SUT::token_by_id::<H256>(assets_for_account[0]).owner, 2);
+		assert_eq!(SUT::token_by_id(assets_for_account[0]).map(|t| t.owner), Some(2));
 	});
 }
 
 #[test]
 fn transfer_err_not_owner() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, Vec::<u8>::default(), None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		assert_err!(
-			SUT::transfer(Origin::signed(0), 2, Vec::<u8>::default().blake2_256().into()),
+			SUT::transfer(Origin::signed(0), 2, 1),
 			Error::<Test>::NotTokenOwner
 		);
 	});
@@ -203,7 +201,7 @@ fn transfer_err_not_owner() {
 fn transfer_err_not_exist() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			SUT::transfer(Origin::signed(1), 2, Vec::<u8>::default().blake2_256().into()),
+			SUT::transfer(Origin::signed(1), 2, 1),
 			Error::<Test>::NotTokenOwner
 		);
 	});
@@ -212,13 +210,13 @@ fn transfer_err_not_exist() {
 #[test]
 fn transfer_err_max_user() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, vec![0], None));
-		assert_ok!(SUT::mint(Origin::root(), 1, vec![1], None));
-		assert_ok!(SUT::mint(Origin::root(), 2, Vec::<u8>::default(), None));
-		assert_eq!(SUT::token_by_id::<H256>(Vec::<u8>::default().blake2_256().into()).owner, 2);
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
+		assert_ok!(SUT::mint(Origin::root(), 2, None));
+		assert_eq!(SUT::token_by_id(3).map(|t| t.owner), Some(2));
 
 		assert_err!(
-			SUT::transfer(Origin::signed(2), 1, Vec::<u8>::default().blake2_256().into()),
+			SUT::transfer(Origin::signed(2), 1, 3),
 			Error::<Test>::TooManyTokensForAccount
 		);
 	});

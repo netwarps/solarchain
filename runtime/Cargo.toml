@@ -109,6 +109,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"pallet-nft/runtime-benchmarks",
 ]
 # Make contract callable functions marked as __unstable__ available. Do not enable
 # on live chains as those are subject to change. 

@@ -3,6 +3,7 @@ members = [
     'node',
     'runtime',
     'pallets/nft',
+    'pallets/interlaken'
 ]
 [profile.release]
 panic = 'unwind'

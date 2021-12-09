@@ -5,6 +5,16 @@ mod tests;
 
 pub use pallet::*;
 
+use scale_info::TypeInfo;
+
+use codec::{Decode, Encode};
+
+#[derive(Debug, Default, Encode, Decode, TypeInfo)]
+pub struct TransactionInfo<Price> {
+    pub price: Price,
+    pub tradable: bool,
+}
+
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::{
@@ -23,8 +33,7 @@ pub mod pallet {
     #[cfg(feature = "std")]
     // use frame_support::serde::{Serialize, Deserialize};
     use pallet_nft::UniqueAssets;
-    use sp_runtime::DispatchResultWithInfo;
-    use frame_support::weights::PostDispatchInfo;
+    use crate::TransactionInfo;
     // use sp_runtime::DispatchResultWithInfo;
 
     #[pallet::pallet]
@@ -33,7 +42,10 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn nft_price)]
-    pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, BalanceOf<T>>;
+    // pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, BalanceOf<T>>;
+    pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, TransactionInfo<BalanceOf<T>>>;
+
+    // pub type NFTTPrice<T> = StorageDoubleMap<_, Twox64Concat, TokenId<T>, Twox64Concat, bool, BalanceOf<T>>;
 
     // Account
     pub type AccountOf<T> = <T as frame_system::Config>::AccountId;
@@ -92,38 +104,54 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(100)]
-        pub fn buy(origin: OriginFor<T>, token_id: TokenId<T>, receiver: T::AccountId) -> DispatchResult {
-            let from = ensure_signed(origin)?;
+        pub fn buy(origin: OriginFor<T>, token_id: TokenId<T>) -> DispatchResult {
+            let buyer = ensure_signed(origin)?;
+            let owner = <T>::UniqueAssets::owner_of(&token_id);
 
-            ensure!(<T>::UniqueAssets::owner_of(&token_id) == from, <Error<T>>::NotNFTOwner);
-            ensure!(from != receiver, <Error<T>>::TransferToSelf);
+            ensure!(owner.is_some(), <Error<T>>::NFTNotExist);
+            ensure!(owner.clone() != Some(buyer.clone()), <Error<T>>::TransferToSelf);
 
-            let price = Self::nft_price(&token_id);
-            let balance = T::Currency::free_balance(&receiver);
-            ensure!(price <= Some(balance), <Error<T>>::NotEnoughBalance);
-            T::Currency::transfer(&receiver, &from, price.unwrap_or_default(), ExistenceRequirement::KeepAlive);
-            T::UniqueAssets::transfer(&receiver, &token_id)
+            let option_trans_info_by_token_id = Self::nft_price(&token_id);
+            ensure!(option_trans_info_by_token_id.is_some(), <Error<T>>::NFTNotExist);
+            let trans_info_by_token_id = option_trans_info_by_token_id.unwrap();
+            ensure!(trans_info_by_token_id.tradable, <Error<T>>::NFTNotForSale);
+
+            let price = trans_info_by_token_id.price;
+            let balance = T::Currency::free_balance(&buyer);
+            ensure!(price <= balance, <Error<T>>::NotEnoughBalance);
+            T::Currency::transfer(&buyer, &owner.unwrap(), price, ExistenceRequirement::KeepAlive)?;
+            T::UniqueAssets::transfer(&buyer, &token_id)
         }
 
         #[pallet::weight(100)]
         pub fn set_nft_price(origin: OriginFor<T>, token_id: TokenId<T>, price: BalanceOf<T>) -> DispatchResult {
-            let sender = ensure_signed(origin)?;
-            ensure!(T::UniqueAssets::owner_of(&token_id) == sender, <Error<T>>::NotNFTOwner);
-            <NFTPrice<T>>::insert(token_id.clone(), price);
-            Self::deposit_event(Event::PriceSet(sender, token_id, Some(price)));
+            let owner = ensure_signed(origin)?;
+            ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), <Error<T>>::NotNFTOwner);
+            <NFTPrice<T>>::insert(token_id.clone(), TransactionInfo {
+                price,
+                tradable: true,
+            });
+            Self::deposit_event(Event::PriceSet(owner, token_id, Some(price)));
+            Ok(())
+        }
+
+        #[pallet::weight(100)]
+        pub fn set_nft_not_for_sale(origin: OriginFor<T>, token_id: TokenId<T>) -> DispatchResult {
+            let owner = ensure_signed(origin)?;
+            ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), <Error<T>>::NotNFTOwner);
+
+            <NFTPrice<T>>::insert(token_id, TransactionInfo { price: Default::default(), tradable: false });
             Ok(())
         }
     }
 
-    // TODO Parts II: helper function for Kitty struct
-
     impl<T: Config> Pallet<T> {
-        pub fn get_assets_by_account(account: T::AccountId) -> Result<Vec<TokenId<T>>, DispatchError> {
-            Ok(T::UniqueAssets::assets_of_account(&account))
+        pub fn get_nft_price(id: TokenId<T>) -> BalanceOf<T> {
+            Self::nft_price(&id).unwrap_or_default().price
         }
 
-        pub fn get_nft_price(id: TokenId<T>) -> BalanceOf<T> {
-            Self::nft_price(&id).unwrap_or_default()
+        pub fn get_all_nft() -> Vec<(TokenId<T>, TransactionInfo<BalanceOf<T>>)> {
+            <NFTPrice<T>>::iter().collect::<Vec<_>>()
         }
     }
 

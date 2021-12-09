@@ -33,8 +33,8 @@ parameter_types! {
         frame_system::limits::BlockWeights::simple_max(1024);
     pub const ExistentialDeposit: u64 = 1;
     pub const MaxTokenMetaLength: u32 = 32;
-    pub const MaxTokens: u128 = 5;
-    pub const MaxTokensPerUser: u64 = 2;
+    pub const MaxTokens: u128 = 100;
+    pub const MaxTokensPerUser: u64 = 100;
 }
 
 impl frame_system::Config for Test {
@@ -79,7 +79,6 @@ impl pallet_balances::Config for Test {
 
 impl pallet_nft::Config for Test {
     type TokenAdmin = frame_system::EnsureRoot<Self::AccountId>;
-    type TokenInfo = Vec<u8>;
     type TokenMetaLimit = MaxTokenMetaLength;
     type TokenLimit = MaxTokens;
     type UserTokenLimit = MaxTokensPerUser;
@@ -99,7 +98,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
     GenesisConfig {
         balances: pallet_balances::GenesisConfig {
-            balances: vec![(1, 10), (2, 10)]
+            balances: vec![(1, 100), (2, 100)]
         },
         nft: pallet_nft::GenesisConfig {
             tokens: vec![]

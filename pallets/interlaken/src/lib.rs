@@ -68,21 +68,21 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        /// An account cannot own more Kitties than `MaxKittyCount`.
+        /// An account cannot own more NFT than `MaxNFTCount`.
         ExceedMaxNFTOwned,
         /// Buyer cannot be the owner.
         BuyerIsNFTOwner,
-        /// Cannot transfer a kitty to its owner.
+        /// Cannot transfer a NFT to its owner.
         TransferToSelf,
-        /// Handles checking whether the Kitty exists.
+        /// Handles checking whether the NFT exists.
         NFTNotExist,
-        /// Handles checking that the Kitty is owned by the account transferring, buying or setting a price for it.
+        /// Handles checking that the NFT is owned by the account transferring, buying or setting a price for it.
         NotNFTOwner,
-        /// Ensures the Kitty is for sale.
+        /// Ensures the NFT is for sale.
         NFTNotForSale,
         /// Ensures that the buying price is greater than the asking price.
         NFTBidPriceTooLow,
-        /// Ensures that an account has enough funds to purchase a Kitty.
+        /// Ensures that an account has enough funds to purchase a NFT.
         NotEnoughBalance,
     }
 
@@ -91,13 +91,13 @@ pub mod pallet {
     pub enum Event<T: Config> {
         // TODO Part III
         // Success(T::Time, T::Day),
-        // A new Kitty was successfully created. \[sender, kitty_id\]
+        // A new NFT was successfully created. \[sender, token_id\]
         Created(T::AccountId, T::Hash),
-        // Kitty price was successfully set. \[sender, kitty_id, new_price\]
+        // NFT price was successfully set. \[sender, token_id, new_price\]
         PriceSet(AccountOf<T>, TokenId<T>, Option<BalanceOf<T>>),
-        /// A Kitty was successfully transferred. \[from, to, kitty_id\]
+        /// A NFT was successfully transferred. \[from, to, token_id\]
         Transferred(T::AccountId, T::AccountId, TokenId<T>),
-        // A Kitty was successfully bought. \[buyer, seller, kitty_id, bid_price\]
+        // A NFT was successfully bought. \[buyer, seller, token_id, bid_price\]
         Bought(AccountOf<T>, AccountOf<T>, TokenId<T>, BalanceOf<T>),
     }
 

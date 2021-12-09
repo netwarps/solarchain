@@ -388,23 +388,30 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 			Error::<T>::TooManyTokensForAccount
 		);
 
+		// step 1: get balance of the target token owner
+		let last_token_index = TotalOfAccount::<T>::get(&token.owner) - 1;
+		// step 2: get last token of target token owner by balance
+		let last_token_id = TokensForAccount::<T>::get(&token.owner, &last_token_index).unwrap();
+		// step 3: swap last token to the position of target token
+		TokensForAccount::<T>::insert(token.owner.clone(), token.pos, last_token_id);
+		// step 4: remove last token
+		TokensForAccount::<T>::remove(&token.owner, last_token_index);
+		// step 5: Origin owner's balance sub 1
 		TotalOfAccount::<T>::mutate(&token.owner, |total| *total -= 1);
+		// step 6: Newest owner's balance add 1
 		let mut new_index: u64 = 0;
 		TotalOfAccount::<T>::mutate(dest_account, |total| {
 			new_index = *total;
 			*total += 1
 		});
-
-		// step 1: remove token from the owner's position
-		TokensForAccount::<T>::remove(&token.owner, token.pos);
-		// step 2: push token to the new owner
+		// step 7: push token to the new owner
 		TokensForAccount::<T>::insert(&dest_account, new_index, token_id);
-
-		// step 3: update token_by_id
+		// step 8: update token_by_id
 		token.owner = dest_account.clone();
 		token.pos = new_index;
 
 		TokenById::<T>::insert(token_id, token);
+
 
 		Ok(())
 	}

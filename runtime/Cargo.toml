@@ -16,6 +16,8 @@ codec = { package = "parity-scale-codec", version = "2.0.0", default-features = 
 scale-info={default-features = false,features = ['derive'],version = '1.0'}
 
 pallet-nft = { path = "../pallets/nft", package = "pallet-nft", default-features = false }
+pallet-nft-rpc-runtime-api = { path = "../pallets/nft/rpc/runtime-api", package = "pallet-nft-rpc-runtime-api", default-features = false }
+
 pallet-aura = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "pallet-aura", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "pallet-balances", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "pallet-grandpa", default-features = false }

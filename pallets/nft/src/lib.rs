@@ -279,6 +279,16 @@ pub mod pallet {
 	}
 }
 
+impl<T: Config> Pallet<T> {
+
+	pub fn tokens_of(account: T::AccountId, limit: u64, offset: u64) -> Vec<u128> {
+		TokensForAccount::<T>::iter_prefix(&account)
+			.skip(offset as usize)
+			.take(limit as usize)
+			.map(|(_, token_id)| token_id).collect()
+	}
+}
+
 impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 	type AssetId = TokenId;
 	type AssetLimit = T::TokenLimit;

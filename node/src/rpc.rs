@@ -8,6 +8,7 @@
 use std::sync::Arc;
 
 use pallet_contracts_rpc::{Contracts, ContractsApi};
+use pallet_nft_rpc::{Nft, NftApi};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use solar_node_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index};
@@ -34,6 +35,7 @@ where
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_contracts_rpc::ContractsRuntimeApi<Block, AccountId, Balance, BlockNumber, Hash>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
+	C::Api: pallet_nft_rpc::NftRuntimeApi<Block,AccountId>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 {
@@ -54,6 +56,8 @@ where
 
 	// Contracts RPC API extension
 	io.extend_with(ContractsApi::to_delegate(Contracts::new(client.clone())));
+
+	io.extend_with(NftApi::to_delegate(Nft::new(client.clone())));
 
 	io
 }

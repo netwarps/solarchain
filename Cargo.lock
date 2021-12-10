@@ -3810,6 +3810,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-nft-rpc"
+version = "0.1.0"
+dependencies = [
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "pallet-nft-rpc-runtime-api",
+ "parity-scale-codec",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-nft-rpc-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-randomness-collective-flip"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?tag=monthly-2021-11-1#352c46a648a5f2d4526e790a184daa4a1ffdb3bf"
@@ -6041,6 +6071,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "jsonrpc-core",
  "pallet-contracts-rpc",
+ "pallet-nft-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
  "sc-cli",
@@ -6090,6 +6121,7 @@ dependencies = [
  "pallet-contracts-rpc-runtime-api",
  "pallet-grandpa",
  "pallet-nft",
+ "pallet-nft-rpc-runtime-api",
  "pallet-randomness-collective-flip",
  "pallet-scheduler",
  "pallet-sudo",

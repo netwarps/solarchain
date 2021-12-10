@@ -663,4 +663,16 @@ impl_runtime_apis! {
 			Contracts::get_storage(address, key)
 		}
 	}
+
+	impl pallet_nft_rpc_runtime_api::NftApi<Block, AccountId>
+		for Runtime
+	{
+		fn tokens_of(
+			account: AccountId,
+			limit: u64,
+			offset: u64,
+		) -> Vec<u128> {
+			Nft::tokens_of(account, limit, offset)
+		}
+	}
 }

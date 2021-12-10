@@ -17,7 +17,7 @@ use frame_support::{
 };
 use sp_std::vec::Vec;
 use codec::FullCodec;
-use std::fmt::Debug;
+use sp_std::fmt::Debug;
 use scale_info::TypeInfo;
 
 /// An interface over a set of unique assets.

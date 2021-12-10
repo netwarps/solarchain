@@ -35,7 +35,6 @@ pub mod pallet {
     #[cfg(feature = "std")]
     // use frame_support::serde::{Serialize, Deserialize};
     use pallet_nft::UniqueAssets;
-    use crate::TransactionInfo;
     // use sp_runtime::DispatchResultWithInfo;
 
     #[pallet::pallet]
@@ -44,8 +43,8 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn nft_price)]
-    // pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, BalanceOf<T>>;
-    pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, TransactionInfo<BalanceOf<T>>>;
+    pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, BalanceOf<T>>;
+    // pub type NFTPrice<T> = StorageMap<_, Twox64Concat, TokenId<T>, TransactionInfo<BalanceOf<T>>>;
 
     // pub type NFTTPrice<T> = StorageDoubleMap<_, Twox64Concat, TokenId<T>, Twox64Concat, bool, BalanceOf<T>>;
 
@@ -113,15 +112,16 @@ pub mod pallet {
             ensure!(owner.is_some(), <Error<T>>::NFTNotExist);
             ensure!(owner.clone() != Some(buyer.clone()), <Error<T>>::TransferToSelf);
 
-            let option_trans_info_by_token_id = Self::nft_price(&token_id);
-            ensure!(option_trans_info_by_token_id.is_some(), <Error<T>>::NFTNotExist);
-            let trans_info_by_token_id = option_trans_info_by_token_id.unwrap();
-            ensure!(trans_info_by_token_id.tradable, <Error<T>>::NFTNotForSale);
+            // let option_trans_info_by_token_id = Self::nft_price(&token_id);
+            // ensure!(option_trans_info_by_token_id.is_some(), <Error<T>>::NFTNotExist);
+            // let trans_info_by_token_id = option_trans_info_by_token_id.unwrap();
+            // ensure!(trans_info_by_token_id.tradable, <Error<T>>::NFTNotForSale);
 
-            let price = trans_info_by_token_id.price;
+            let price = Self::nft_price(&token_id);
+            ensure!(price.is_some(), <Error<T>>::NFTNotExist);
             let balance = T::Currency::free_balance(&buyer);
-            ensure!(price <= balance, <Error<T>>::NotEnoughBalance);
-            T::Currency::transfer(&buyer, &owner.unwrap(), price, ExistenceRequirement::KeepAlive)?;
+            ensure!(price <= Some(balance), <Error<T>>::NotEnoughBalance);
+            T::Currency::transfer(&buyer, &owner.unwrap(), price.unwrap(), ExistenceRequirement::KeepAlive)?;
             T::UniqueAssets::transfer(&buyer, &token_id)
         }
 
@@ -129,10 +129,8 @@ pub mod pallet {
         pub fn set_nft_price(origin: OriginFor<T>, token_id: TokenId<T>, price: BalanceOf<T>) -> DispatchResult {
             let owner = ensure_signed(origin)?;
             ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), <Error<T>>::NotNFTOwner);
-            <NFTPrice<T>>::insert(token_id.clone(), TransactionInfo {
-                price,
-                tradable: true,
-            });
+            // Add token_id and price to hashmap.
+            <NFTPrice<T>>::insert(token_id.clone(), price);
             Self::deposit_event(Event::PriceSet(owner, token_id, Some(price)));
             Ok(())
         }
@@ -142,17 +140,18 @@ pub mod pallet {
             let owner = ensure_signed(origin)?;
             ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), <Error<T>>::NotNFTOwner);
 
-            <NFTPrice<T>>::insert(token_id, TransactionInfo { price: Default::default(), tradable: false });
+            // Remove means that NFT is not for sale.
+            <NFTPrice<T>>::remove(&token_id);
             Ok(())
         }
     }
 
     impl<T: Config> Pallet<T> {
         pub fn get_nft_price(id: TokenId<T>) -> BalanceOf<T> {
-            Self::nft_price(&id).unwrap_or_default().price
+            Self::nft_price(&id).unwrap_or_default()
         }
 
-        pub fn get_all_nft() -> Vec<(TokenId<T>, TransactionInfo<BalanceOf<T>>)> {
+        pub fn get_all_nft() -> Vec<(TokenId<T>, BalanceOf<T>)> {
             <NFTPrice<T>>::iter().collect::<Vec<_>>()
         }
     }

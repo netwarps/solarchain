@@ -390,10 +390,19 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 
 		// step 1: get balance of the target token owner
 		let last_token_index = TotalOfAccount::<T>::get(&token.owner) - 1;
-		// step 2: get last token of target token owner by balance
-		let last_token_id = TokensForAccount::<T>::get(&token.owner, &last_token_index).unwrap();
-		// step 3: swap last token to the position of target token
-		TokensForAccount::<T>::insert(token.owner.clone(), token.pos, last_token_id);
+        // If account has many tokens, swap it.
+		if last_token_index != 0 {
+			// step 2: get last token of target token owner by balance
+			let last_token_id = TokensForAccount::<T>::get(&token.owner, &last_token_index).unwrap();
+			// step 3: swap last token to the position of target token
+			TokensForAccount::<T>::insert(token.owner.clone(), token.pos, last_token_id);
+			// step 4: reset last token index
+			TokenById::<T>::mutate(&last_token_id, |option| {
+				if let Some(last_token) = option {
+					last_token.pos = token.pos;
+				}
+			});
+		}
 		// step 4: remove last token
 		TokensForAccount::<T>::remove(&token.owner, last_token_index);
 		// step 5: Origin owner's balance sub 1

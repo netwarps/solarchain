@@ -43,6 +43,7 @@ fn mint_token() {
         for i in 0u64..balance_1 {
             println!("{:?}", Nft::tokens_for_account(&1, i));
         }
+        println!();
         for i in 0u64..balance_2 {
             println!("{:?}", Nft::tokens_for_account(&2, i));
         }

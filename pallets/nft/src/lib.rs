@@ -57,12 +57,14 @@ mod benchmarking;
 #[derive(Debug, Default, Encode, Decode, TypeInfo)]
 #[scale_info(skip_type_params(TMetaLimit))]
 pub struct Token<TAccountId, TMetaLimit: Get<u32>> {
-	/// Token owner
-	pub owner: TAccountId,
-	/// Token position in owner's storage
-	pub pos: u64,
-	/// Token meta data
-	pub meta: Option<BoundedVec<u8, TMetaLimit>>,
+    /// Token owner
+    pub owner: TAccountId,
+    /// Token position in owner's storage
+    pub pos: u64,
+    /// Token meta data
+    pub meta: Option<BoundedVec<u8, TMetaLimit>>,
+    /// Other approved user
+    pub approval: Option<TAccountId>,
 }
 
 #[frame_support::pallet]
@@ -129,6 +131,17 @@ pub mod pallet {
 		TokenId,
 		OptionQuery,
 	>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn approval_for_all)]
+    pub type ApprovalForAll<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Blake2_128Concat,
+        T::AccountId,
+        bool
+    >;
 
 	#[pallet::storage]
 	#[pallet::getter(fn token_by_id)]
@@ -246,37 +259,62 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		pub fn burn(origin: OriginFor<T>, token_id: TokenId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(Some(who) == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
+            // ensure!(Some(who) == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
+            ensure!(Self::owner_or_approval(who, &token_id), Error::<T>::NotTokenOwner);
 
 			<Self as UniqueAssets<_>>::burn(&token_id)?;
 			Self::deposit_event(Event::Burned(token_id.clone()));
 			Ok(())
 		}
 
-		/// Transfer a token to a new owner.
-		///
-		/// The dispatch origin for this call must be the token owner.
-		///
-		/// This function will throw an error if the new owner already owns the maximum
-		/// number of this type of token.
-		///
-		/// - `dest_account`: Receiver of the token.
-		/// - `token_id`: The hash (calculated by the runtime system's hashing algorithm) of the
-		///   info that defines the token to destroy.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn transfer(
-			origin: OriginFor<T>,
-			dest_account: T::AccountId,
-			token_id: TokenId,
-		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			ensure!(Some(who) == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
+        /// Transfer a token to a new owner.
+        ///
+        /// The dispatch origin for this call must be the token owner.
+        ///
+        /// This function will throw an error if the new owner already owns the maximum
+        /// number of this type of token.
+        ///
+        /// - `dest_account`: Receiver of the token.
+        /// - `token_id`: The hash (calculated by the runtime system's hashing algorithm) of the
+        ///   info that defines the token to destroy.
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn transfer(
+            origin: OriginFor<T>,
+            dest_account: T::AccountId,
+            token_id: TokenId,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            // ensure!(Some(who) == Self::owner_of(&token_id), Error::<T>::NotTokenOwner);
+            ensure!(Self::owner_or_approval(who, &token_id), Error::<T>::NotTokenOwner);
 
-			<Self as UniqueAssets<_>>::transfer(&dest_account, &token_id)?;
-			Self::deposit_event(Event::Transferred(token_id.clone(), dest_account.clone()));
-			Ok(())
-		}
-	}
+            <Self as UniqueAssets<_>>::transfer(&dest_account, &token_id)?;
+            Self::deposit_event(Event::Transferred(token_id.clone(), dest_account.clone()));
+            Ok(())
+        }
+
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn approval(
+            origin: OriginFor<T>,
+            dest_account: T::AccountId,
+            token_id: TokenId,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            ensure!(Self::owner_of(&token_id) == Some(who), Error::<T>::NotTokenOwner);
+            Self::approve(dest_account, &token_id);
+            Ok(())
+        }
+
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn set_approval_for_all(
+            origin: OriginFor<T>,
+            target_account: T::AccountId,
+            approved: bool,
+        ) -> DispatchResult {
+            let owner = ensure_signed(origin)?;
+            <Self as UniqueAssets<_>>::set_approval_for_all(owner, target_account, approved)?;
+            Ok(())
+        }
+    }
 }
 
 impl<T: Config> Pallet<T> {
@@ -359,9 +397,9 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 			*total += 1
 		});
 
-		// construct the new token
-		let token =
-			Token { owner: owner_account.clone(), pos: index, meta: bounded_meta };
+        // construct the new token
+        let token =
+            Token { owner: owner_account.clone(), pos: index, meta: bounded_meta, approval: None };
 
 		// put onto the owner's account
 		TokensForAccount::<T>::insert(owner_account, index, token_id);
@@ -401,37 +439,62 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 		// step 1: get balance of the target token owner
 		let last_token_index = TotalOfAccount::<T>::get(&token.owner) - 1;
         // If account has many tokens, swap it.
-		if last_token_index != 0 {
-			// step 2: get last token of target token owner by balance
-			let last_token_id = TokensForAccount::<T>::get(&token.owner, &last_token_index).unwrap();
-			// step 3: swap last token to the position of target token
-			TokensForAccount::<T>::insert(token.owner.clone(), token.pos, last_token_id);
-			// step 4: reset last token index
-			TokenById::<T>::mutate(&last_token_id, |option| {
-				if let Some(last_token) = option {
-					last_token.pos = token.pos;
-				}
-			});
-		}
-		// step 4: remove last token
-		TokensForAccount::<T>::remove(&token.owner, last_token_index);
-		// step 5: Origin owner's balance sub 1
-		TotalOfAccount::<T>::mutate(&token.owner, |total| *total -= 1);
-		// step 6: Newest owner's balance add 1
-		let mut new_index: u64 = 0;
-		TotalOfAccount::<T>::mutate(dest_account, |total| {
-			new_index = *total;
-			*total += 1
-		});
-		// step 7: push token to the new owner
-		TokensForAccount::<T>::insert(&dest_account, new_index, token_id);
-		// step 8: update token_by_id
-		token.owner = dest_account.clone();
-		token.pos = new_index;
+        if last_token_index != 0 {
+            // step 2: get last token of target token owner by balance
+            let last_token_id = TokensForAccount::<T>::get(&token.owner, &last_token_index).unwrap();
+            // step 3: swap last token to the position of target token
+            TokensForAccount::<T>::insert(token.owner.clone(), token.pos, last_token_id);
+            // step 4: reset last token index
+            TokenById::<T>::mutate(&last_token_id, |option| {
+                if let Some(last_token) = option {
+                    last_token.pos = token.pos;
+                }
+            });
+        }
+        // step 5: remove last token
+        TokensForAccount::<T>::remove(&token.owner, last_token_index);
+        // step 6: Origin owner's balance sub 1
+        TotalOfAccount::<T>::mutate(&token.owner, |total| *total -= 1);
+        // step 7: Newest owner's balance add 1
+        let mut new_index: u64 = 0;
+        TotalOfAccount::<T>::mutate(dest_account, |total| {
+            new_index = *total;
+            *total += 1
+        });
+        // step 8: push token to the new owner
+        TokensForAccount::<T>::insert(&dest_account, new_index, token_id);
+        // step 9: update token_by_id
+        token.owner = dest_account.clone();
+        token.pos = new_index;
 
-		TokenById::<T>::insert(token_id, token);
+        TokenById::<T>::insert(token_id, token);
+        Ok(())
+    }
 
+    fn approve(approval: T::AccountId, asset_id: &Self::AssetId) {
+        TokenById::<T>::mutate(&asset_id, |option| {
+            if let Some(token) = option {
+                token.approval = Some(approval);
+            }
+        });
+    }
 
-		Ok(())
-	}
+    fn set_approval_for_all(owner: T::AccountId, operator: T::AccountId, approved: bool) -> dispatch::DispatchResult {
+        ApprovalForAll::<T>::insert(owner, operator, approved);
+        Ok(())
+    }
+
+    fn owner_or_approval(target_account: T::AccountId, asset_id: &Self::AssetId) -> bool {
+        if let Some(token) = Self::token_by_id(asset_id) {
+            let is_owner = token.owner == target_account;
+            let is_approval = if token.approval.is_some() {
+                token.approval.unwrap() == target_account
+            } else {
+                false
+            };
+            let approval_for_all = Self::approval_for_all(&token.owner, &target_account).unwrap_or(false);
+            return is_owner || is_approval || approval_for_all;
+        }
+        return false;
+    }
 }

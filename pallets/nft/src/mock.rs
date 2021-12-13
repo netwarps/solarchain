@@ -60,7 +60,7 @@ impl system::Config for Test {
 parameter_types! {
 	pub const MaxTokenMetaLength: u32 = 1024 * 1024;
 	pub const MaxTokens: u128 = 5;
-	pub const MaxTokensPerUser: u64 = 2;
+	pub const MaxTokensPerUser: u64 = 3;
 }
 
 // For testing the pallet, we construct most of a mock runtime. This means

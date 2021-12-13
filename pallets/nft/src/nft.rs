@@ -64,4 +64,10 @@ pub trait UniqueAssets<AccountId> {
     /// - The asset with the specified ID does not exist.
     /// - The destination account has already reached the user asset limit.
     fn transfer(dest_account: &AccountId, asset_id: &Self::AssetId) -> DispatchResult;
+
+    fn approve(approval: AccountId, asset_id: &Self::AssetId);
+
+    fn set_approval_for_all(owner: AccountId, operator: AccountId, approved: bool) -> DispatchResult;
+
+    fn owner_or_approval(target_account: AccountId, asset_id: &Self::AssetId) -> bool;
 }

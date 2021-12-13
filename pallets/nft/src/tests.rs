@@ -87,9 +87,12 @@ fn mint_err_dupe() {
 
 #[test]
 fn mint_err_max_user() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, None));
-		assert_ok!(SUT::mint(Origin::root(), 1, None));
+    new_test_ext().execute_with(|| {
+        assert_ok!(SUT::mint(Origin::root(), 1, None));
+        assert_ok!(SUT::mint(Origin::root(), 1, None));
+        assert_ok!(SUT::mint(Origin::root(), 1, None));
+        assert_ok!(SUT::mint(Origin::root(), 2, None));
+        assert_ok!(SUT::mint(Origin::root(), 2, None));
 
 		assert_err!(
 			SUT::mint(Origin::root(), 1, None),
@@ -165,18 +168,20 @@ fn burn_err_not_exist() {
 
 #[test]
 fn transfer() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(SUT::mint(Origin::root(), 1, None));
+    new_test_ext().execute_with(|| {
+        assert_ok!(SUT::mint(Origin::root(), 1, None));
+        assert_ok!(SUT::mint(Origin::root(), 1, None));
+        assert_ok!(SUT::mint(Origin::root(), 1, None));
 
 		let assets = SUT::assets_of_account(&(1 as u64));
 
 		assert_ok!(SUT::transfer(Origin::signed(1), 2, assets[0]));
 
-		assert_eq!(SUT::total(), 1);
+		assert_eq!(SUT::total(), 3);
 		assert_eq!(SUT::burned(), 0);
-		assert_eq!(SUT::total_of_account(&1), 0);
+		assert_eq!(SUT::total_of_account(&1), 2);
 		assert_eq!(SUT::total_of_account(&2), 1);
-		assert_eq!(SUT::assets_of_account(&1), vec![]);
+		assert_eq!(SUT::assets_of_account(&1), vec![3, 1]);
 		let assets_for_account = SUT::assets_of_account(&2);
 		assert_eq!(assets_for_account.len(), 1);
 		assert_eq!(assets_for_account[0], assets[0]);
@@ -212,11 +217,13 @@ fn transfer_err_max_user() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(SUT::mint(Origin::root(), 1, None));
 		assert_ok!(SUT::mint(Origin::root(), 1, None));
+		assert_ok!(SUT::mint(Origin::root(), 1, None));
 		assert_ok!(SUT::mint(Origin::root(), 2, None));
-		assert_eq!(SUT::token_by_id(3).map(|t| t.owner), Some(2));
+		assert_ok!(SUT::mint(Origin::root(), 2, None));
+		assert_eq!(SUT::token_by_id(3).map(|t| t.owner), Some(1));
 
 		assert_err!(
-			SUT::transfer(Origin::signed(2), 1, 3),
+			SUT::transfer(Origin::signed(2), 1, 4),
 			Error::<Test>::TooManyTokensForAccount
 		);
 	});

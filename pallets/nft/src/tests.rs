@@ -151,7 +151,7 @@ fn burn_err_not_owner() {
 
 		assert_err!(
 			SUT::burn(Origin::signed(2), 1),
-			Error::<Test>::NotTokenOwner
+			Error::<Test>::NotTokenOwnerOrApproval
 		);
 	});
 }
@@ -161,7 +161,7 @@ fn burn_err_not_exist() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
 			SUT::burn(Origin::signed(1), 1),
-			Error::<Test>::NotTokenOwner
+			Error::<Test>::NotTokenOwnerOrApproval
 		);
 	});
 }
@@ -197,7 +197,7 @@ fn transfer_err_not_owner() {
 
 		assert_err!(
 			SUT::transfer(Origin::signed(0), 2, 1),
-			Error::<Test>::NotTokenOwner
+			Error::<Test>::NotTokenOwnerOrApproval
 		);
 	});
 }
@@ -207,7 +207,7 @@ fn transfer_err_not_exist() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
 			SUT::transfer(Origin::signed(1), 2, 1),
-			Error::<Test>::NotTokenOwner
+			Error::<Test>::NotTokenOwnerOrApproval
 		);
 	});
 }

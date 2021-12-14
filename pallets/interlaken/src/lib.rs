@@ -93,41 +93,51 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(100)]
-        pub fn buy(origin: OriginFor<T>, token_id: TokenId<T>) -> DispatchResult {
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn buy(origin: OriginFor<T>, token_id: TokenId<T>, bid_price: BalanceOf<T>) -> DispatchResult {
             let buyer = ensure_signed(origin)?;
             let owner = <T>::UniqueAssets::owner_of(&token_id);
 
+            // Ensure that owner is not empty
             ensure!(owner.is_some(), Error::<T>::NFTNotExist);
+            // Ensure that self is not allowed to buy
             let owner = owner.unwrap();
             ensure!(&owner != &buyer, Error::<T>::TransferToSelf);
-
+            // Ensure that target token is purchasable
             let price = Self::nft_price(&token_id);
             ensure!(price.is_some(), Error::<T>::NFTNotForSale);
+            // Ensure that price is less than bid_price
+            ensure!(price.unwrap() <= bid_price, Error::<T>::NFTBidPriceTooLow);
+            // Ensure that buyer has enough money
             let balance = T::Currency::free_balance(&buyer);
-            ensure!(price <= Some(balance), Error::<T>::NotEnoughBalance);
-            T::Currency::transfer(&buyer, &owner, price.unwrap(), ExistenceRequirement::KeepAlive)?;
+            ensure!(bid_price <= balance, Error::<T>::NotEnoughBalance);
+
+            T::Currency::transfer(&buyer, &owner, bid_price, ExistenceRequirement::KeepAlive)?;
             T::UniqueAssets::transfer(&buyer, &token_id)?;
-            Self::deposit_event(Event::Bought(buyer, owner, token_id, price.unwrap()));
+            Self::deposit_event(Event::Bought(buyer, owner, token_id.clone(), bid_price));
+            NFTPrice::<T>::remove(&token_id);
             Ok(())
         }
 
-        #[pallet::weight(100)]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn set_nft_price(origin: OriginFor<T>, token_id: TokenId<T>, price: BalanceOf<T>) -> DispatchResult {
-            let owner = ensure_signed(origin)?;
-            ensure!(T::UniqueAssets::owner_or_approval(owner.clone(), &token_id), Error::<T>::NotNFTOwner);
+            // Ensure that origin is nft owner or approval
+            let who = ensure_signed(origin)?;
+            // ensure!(T::UniqueAssets::owner_of(&token_id) == Some(who.clone()), Error::<T>::NotNFTOwner);
+            ensure!(T::UniqueAssets::owner_or_approval(who.clone(), &token_id), Error::<T>::NotNFTOwner);
             <NFTPrice<T>>::insert(token_id.clone(), price);
-            Self::deposit_event(Event::PriceSet(owner, token_id, Some(price)));
+            Self::deposit_event(Event::PriceSet(who, token_id, Some(price)));
             Ok(())
         }
 
-        #[pallet::weight(100)]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn set_nft_not_for_sale(origin: OriginFor<T>, token_id: TokenId<T>) -> DispatchResult {
-            let owner = ensure_signed(origin)?;
-            ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), Error::<T>::NotNFTOwner);
+            let who = ensure_signed(origin)?;
+            // ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), Error::<T>::NotNFTOwner);
+            ensure!(T::UniqueAssets::owner_or_approval(who.clone(), &token_id), Error::<T>::NotNFTOwner);
 
             // Remove means that NFT is not for sale.
-            <NFTPrice<T>>::remove(&token_id);
+            NFTPrice::<T>::remove(&token_id);
             Ok(())
         }
     }
@@ -144,14 +154,13 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub tokens: u32,
         _dummy: PhantomData<T>,
     }
 
     #[cfg(feature = "std")]
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> GenesisConfig<T> {
-            GenesisConfig { tokens: 0, _dummy: Default::default() }
+            GenesisConfig { _dummy: Default::default() }
         }
     }
 

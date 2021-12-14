@@ -65,9 +65,16 @@ pub trait UniqueAssets<AccountId> {
     /// - The destination account has already reached the user asset limit.
     fn transfer(dest_account: &AccountId, asset_id: &Self::AssetId) -> DispatchResult;
 
-    fn approve(approval: AccountId, asset_id: &Self::AssetId);
+    /// Approve target account to operate asset_id.
+    fn approve(approval: Option<AccountId>, asset_id: &Self::AssetId) -> DispatchResult;
 
+    /// Set whether all nft by owner is approved for operator.
     fn set_approval_for_all(owner: AccountId, operator: AccountId, approved: bool) -> DispatchResult;
 
+    /// Check whether target account is able to operate asset_id.
     fn owner_or_approval(target_account: AccountId, asset_id: &Self::AssetId) -> bool;
+
+    fn get_approved(asset_id: &Self::AssetId) -> Option<AccountId>;
+
+    fn is_approve_for_all(owner: AccountId, operator: AccountId) -> bool;
 }

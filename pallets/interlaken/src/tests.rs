@@ -18,14 +18,14 @@ fn mint_token() {
         assert_eq!(Interlaken::get_nft_price(1), 31);
 
         // Buy token 1
-        let _ = Interlaken::buy(Origin::signed(2), 1);
-        assert_eq!(Balances::free_balance(&1), 131);
-        assert_eq!(Balances::free_balance(&2), 69);
+        let _ = Interlaken::buy(Origin::signed(2), 1, 50);
+        assert_eq!(Balances::free_balance(&1), 150);
+        assert_eq!(Balances::free_balance(&2), 50);
 
         // Buy token 5
-        let _ = Interlaken::buy(Origin::signed(2), 5);
-        assert_eq!(Balances::free_balance(&1), 166);
-        assert_eq!(Balances::free_balance(&2), 34);
+        let _ = Interlaken::buy(Origin::signed(2), 5, 40);
+        assert_eq!(Balances::free_balance(&1), 190);
+        assert_eq!(Balances::free_balance(&2), 10);
 
         // Check balance and owned token
         let balance_1 = Nft::total_of_account(&1);
@@ -33,19 +33,10 @@ fn mint_token() {
         let balance_2 = Nft::total_of_account(&2);
         assert_eq!(2, balance_2);
 
-        // for i in 0u64..balance_1 {
-        //     println!("{:?}", Nft::tokens_for_account(&1, i));
-        // }
-        // println!();
-        // for i in 0u64..balance_2 {
-        //     println!("{:?}", Nft::tokens_for_account(&2, i));
-        // }
-        // println!();
-
         // Set price and buy it again
         let set_price_result = Interlaken::set_nft_price(Origin::signed(2), 5, 100);
         assert_eq!(set_price_result, Ok(()));
-        let buy_result = Interlaken::buy(Origin::signed(1), 5);
+        let buy_result = Interlaken::buy(Origin::signed(1), 5, 103);
         assert_eq!(buy_result, Ok(()));
 
         // for i in 0u64..9 {
@@ -58,21 +49,19 @@ fn mint_token() {
         println!("{:?}", Interlaken::get_all_nft());
 
         let _ = Interlaken::set_nft_price(Origin::signed(2), 5, 100);
-        // println!("{:?}", r);
 
         // Allowed set price for token 2.
-        let _ = Nft::approval(Origin::signed(1), 2, 5);
+        let _ = Nft::approval(Origin::signed(1), Some(2), 5);
         let _ = Interlaken::set_nft_price(Origin::signed(2), 5, 100);
         // println!("{:?}", r);
-        println!("{:?}", Interlaken::get_all_nft());
+        assert_eq!(Interlaken::get_nft_price(5), 100);
 
         let err = Interlaken::set_nft_price(Origin::signed(2), 8, 100);
         assert!(err.is_err());
-        println!("Account 2 is not owner for token 8, so it will return {:?}", err);
+        assert_eq!(Interlaken::get_nft_price(8), 38);
 
         let _ = Nft::set_approval_for_all(Origin::signed(1), 2, true);
         let _ = Interlaken::set_nft_price(Origin::signed(2), 8, 123);
-        // println!("{:?}", r);
-        println!("{:?}", Interlaken::get_all_nft());
+        assert_eq!(Interlaken::get_nft_price(8), 123);
     });
 }

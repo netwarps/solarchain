@@ -42,6 +42,7 @@ use frame_system::ensure_signed;
 use sp_std::{fmt::Debug, vec::Vec};
 
 pub mod nft;
+
 pub use crate::nft::UniqueAssets;
 use sp_std::convert::TryInto;
 
@@ -217,9 +218,9 @@ pub mod pallet {
         // Thrown when the token admin attempts to mint a token and the maximum length of this
         // type of token exceeds the limit.
         TooLongMetadata,
-        // Everyone can not transfer token to themselves.
-        TransferToSelf,
-        // Everyone can not set themselves as approval.
+        // Thrown when token will be transferred to default account.
+        TransferToDefault,
+        // Thrown when token owner sets approval to self.
         ApprovedToSelf,
     }
 
@@ -297,20 +298,24 @@ pub mod pallet {
         }
 
         #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn approval(
+        pub fn approve(
             origin: OriginFor<T>,
             dest_account: Option<T::AccountId>,
             token_id: TokenId,
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            // ensure!(Self::owner_of(&token_id) == Some(who), Error::<T>::NotTokenOwnerOrApproval);
-            ensure!(Self::owner_or_approval(who, &token_id), Error::<T>::NotTokenOwnerOrApproval);
 
-            // Not allowed to approve self.
             let owner = Self::owner_of(&token_id);
-            ensure!(dest_account != owner, Error::<T>::TransferToSelf);
+            // Check whether token is exists.
+            ensure!(owner.is_some(), Error::<T>::NonexistentToken);
+            // Not allowed to approve self.
+            ensure!(dest_account != owner, Error::<T>::ApprovedToSelf);
+            // Check whether caller has authority to operate token.
+            ensure!(owner == Some(who.clone()) ||
+                Self::is_approve_for_all(owner.unwrap(), who),
+                Error::<T>::NotTokenOwnerOrApproval);
 
-            Self::approve(dest_account, &token_id)?;
+            <Self as UniqueAssets<_>>::approve(dest_account, &token_id)?;
             Ok(())
         }
 
@@ -437,6 +442,8 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
         let token = Self::token_by_id(&token_id);
         ensure!(token.is_some(), Error::<T>::NonexistentToken);
 
+        ensure!(dest_account != &T::AccountId::default(), Error::<T>::TransferToDefault);
+
         let mut token = token.unwrap();
 
         // Each account has a max tokens limit.
@@ -445,8 +452,8 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
 			Error::<T>::TooManyTokensForAccount
 		);
 
-		// step 1: get balance of the target token owner
-		let last_token_index = TotalOfAccount::<T>::get(&token.owner) - 1;
+        // step 1: get balance of the target token owner
+        let last_token_index = TotalOfAccount::<T>::get(&token.owner) - 1;
         // If account has many tokens, swap it.
         if last_token_index != 0 {
             // step 2: get last token of target token owner by balance
@@ -481,8 +488,6 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
     }
 
     fn approve(approval: Option<T::AccountId>, asset_id: &Self::AssetId) -> dispatch::DispatchResult {
-        // Approved to self is not allowed
-        ensure!(Self::owner_of(asset_id) != approval, Error::<T>::ApprovedToSelf);
         TokenById::<T>::mutate(&asset_id, |option| {
             if let Some(token) = option {
                 token.approval = approval;
@@ -499,17 +504,13 @@ impl<T: Config> UniqueAssets<T::AccountId> for Pallet<T> {
     }
 
     fn owner_or_approval(target_account: T::AccountId, asset_id: &Self::AssetId) -> bool {
-        // if let Some(token) = Self::token_by_id(asset_id) {
-        //     let is_owner = token.owner == target_account;
-        //     let is_approval = token.approval == Some(target_account.clone());
-        //     let approval_for_all = Self::approval_for_all(&token.owner, &target_account).unwrap_or(false);
-        //     return is_owner || is_approval || approval_for_all;
-        // }
-
-        let owner = Self::token_by_id(asset_id).map(|t| t.owner).unwrap_or_default();
-        return &owner == &target_account
-            || Self::get_approved(asset_id) == Some(target_account.clone())
-            || Self::is_approve_for_all(owner, target_account);
+        if let Some(token) = Self::token_by_id(asset_id) {
+            let owner = token.owner;
+            return &owner == &target_account
+                || Self::get_approved(asset_id) == Some(target_account.clone())
+                || Self::is_approve_for_all(owner, target_account);
+        }
+        return false;
     }
 
     fn get_approved(asset_id: &Self::AssetId) -> Option<T::AccountId> {

@@ -67,7 +67,7 @@ pub mod pallet {
         /// Handles checking whether the NFT exists.
         NFTNotExist,
         /// Handles checking that the NFT is owned by the account transferring, buying or setting a price for it.
-        NotNFTOwner,
+        NotNFTOwnerOrApproval,
         /// Ensures the NFT is for sale.
         NFTNotForSale,
         /// Ensures that the buying price is greater than the asking price.
@@ -123,8 +123,8 @@ pub mod pallet {
         pub fn set_nft_price(origin: OriginFor<T>, token_id: TokenId<T>, price: BalanceOf<T>) -> DispatchResult {
             // Ensure that origin is nft owner or approval
             let who = ensure_signed(origin)?;
-            // ensure!(T::UniqueAssets::owner_of(&token_id) == Some(who.clone()), Error::<T>::NotNFTOwner);
-            ensure!(T::UniqueAssets::owner_or_approval(who.clone(), &token_id), Error::<T>::NotNFTOwner);
+            ensure!(T::UniqueAssets::owner_of(&token_id) == Some(who.clone()), Error::<T>::NotNFTOwnerOrApproval);
+            // ensure!(T::UniqueAssets::owner_or_approval(who.clone(), &token_id), Error::<T>::NotNFTOwnerOrApproval);
             <NFTPrice<T>>::insert(token_id.clone(), price);
             Self::deposit_event(Event::PriceSet(who, token_id, Some(price)));
             Ok(())
@@ -133,8 +133,8 @@ pub mod pallet {
         #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn set_nft_not_for_sale(origin: OriginFor<T>, token_id: TokenId<T>) -> DispatchResult {
             let who = ensure_signed(origin)?;
-            // ensure!(T::UniqueAssets::owner_of(&token_id) == Some(owner.clone()), Error::<T>::NotNFTOwner);
-            ensure!(T::UniqueAssets::owner_or_approval(who.clone(), &token_id), Error::<T>::NotNFTOwner);
+            ensure!(T::UniqueAssets::owner_of(&token_id) == Some(who.clone()), Error::<T>::NotNFTOwnerOrApproval);
+            // ensure!(T::UniqueAssets::owner_or_approval(who.clone(), &token_id), Error::<T>::NotNFTOwnerOrApproval);
 
             // Remove means that NFT is not for sale.
             NFTPrice::<T>::remove(&token_id);

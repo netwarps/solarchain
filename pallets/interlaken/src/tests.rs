@@ -51,8 +51,8 @@ fn mint_token() {
         let _ = Interlaken::set_nft_price(Origin::signed(2), 5, 100);
 
         // Allowed set price for token 2.
-        let _ = Nft::approval(Origin::signed(1), Some(2), 5);
-        let _ = Interlaken::set_nft_price(Origin::signed(2), 5, 100);
+        let _ = Nft::approve(Origin::signed(1), Some(2), 5);
+        let _ = Interlaken::set_nft_price(Origin::signed(1), 5, 100);
         // println!("{:?}", r);
         assert_eq!(Interlaken::get_nft_price(5), 100);
 
@@ -61,7 +61,8 @@ fn mint_token() {
         assert_eq!(Interlaken::get_nft_price(8), 38);
 
         let _ = Nft::set_approval_for_all(Origin::signed(1), 2, true);
-        let _ = Interlaken::set_nft_price(Origin::signed(2), 8, 123);
-        assert_eq!(Interlaken::get_nft_price(8), 123);
+        let err = Interlaken::set_nft_price(Origin::signed(2), 8, 123);
+        assert!(err.is_err());
+        assert_eq!(Interlaken::get_nft_price(8), 38);
     });
 }

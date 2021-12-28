@@ -247,8 +247,8 @@ pub mod erc721_extension {
 
         /// Approves the account to transfer the specified token on behalf of the caller.
         #[ink(message)]
-        pub fn approve(&mut self, to: AccountId, id: TokenId) -> Result<(), Error> {
-            self.approve_for(&to, id)?;
+        pub fn approve(&mut self, to: Option<AccountId>, id: TokenId) -> Result<(), Error> {
+            self.approve_for(to, id)?;
             Ok(())
         }
 
@@ -587,7 +587,7 @@ pub mod erc721_extension {
 
         /// Approve the passed `AccountId` to transfer the specified token on behalf of the message's sender.
         #[inline]
-        fn approve_for(&mut self, to: &AccountId, id: TokenId) -> Result<(), Error> {
+        fn approve_for(&mut self, to: Option<AccountId>, id: TokenId) -> Result<(), Error> {
             // Check token exists or not
             if !self.exists(id) {
                 return Err(Error::TokenNotFound);
@@ -602,10 +602,10 @@ pub mod erc721_extension {
                 return Err(Error::NotAllowed);
             };
 
-            let approval = if *to == AccountId::from([0x0; 32]) {
+            let approval = if to == Some(AccountId::from([0x0; 32])) {
                 None
             } else {
-                Some(*to)
+                to.clone()
             };
 
             let token_info = self.token_collection.get_mut(&id).unwrap();
@@ -613,7 +613,7 @@ pub mod erc721_extension {
 
             self.env().emit_event(Approval {
                 from: caller,
-                to: Some(*to),
+                to,
                 id,
             });
             Ok(())

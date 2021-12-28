@@ -12,45 +12,59 @@ mod market {
     use ink_env::call::{build_call, ExecutionInput, Selector};
     use ink_env::call::utils::ReturnType;
 
-    /// Event emitted when a quote withdraw is needed on a match
+    /// A token ID.
+    pub type TokenId = u64;
+
+    /// A collection ID.
+    pub type CollectionId = u64;
+
+    /// Event emitted when a nft token is asked.
     #[ink(event)]
-    pub struct WithdrawQuoteMatched {
+    pub struct OfferCreated {
         #[ink(topic)]
-        address: AccountId,
+        seller: AccountId,
         #[ink(topic)]
-        quote_id: u64,
+        collection_id: CollectionId,
         #[ink(topic)]
-        amount: Balance,
+        token_id: TokenId,
+        price: Balance,
     }
 
-    /// Event emitted when a unused quote withdraw is needed
+    /// Event emitted when a nft token is asked.
     #[ink(event)]
-    pub struct WithdrawQuoteUnused {
+    pub struct OfferUpdated {
         #[ink(topic)]
-        address: AccountId,
+        seller: AccountId,
         #[ink(topic)]
-        quote_id: u64,
+        collection_id: CollectionId,
         #[ink(topic)]
-        amount: Balance,
+        token_id: TokenId,
+        old_price: Balance,
+        new_price: Balance,
     }
 
-    /// Event emitted when an NFT withdraw is needed
+    /// Event emitted when a nft token is canceled to ask.
     #[ink(event)]
-    pub struct WithdrawNFT {
+    pub struct OfferCancelled {
         #[ink(topic)]
-        address: AccountId,
+        seller: AccountId,
         #[ink(topic)]
-        collection_id: u64,
+        collection_id: CollectionId,
         #[ink(topic)]
-        token_id: u64,
+        token_id: TokenId,
     }
 
-    /// Withdraw types.
-    pub enum WithdrawType {
-        /// Withdraw by seller after successful trade
-        WithdrawMatched,
-        /// Withdraw after cancelled or errored trade
-        WithdrawUnused,
+    /// Event emitted when a nft token is canceled to ask.
+    #[ink(event)]
+    pub struct Traded {
+        seller: AccountId,
+        #[ink(topic)]
+        buyer: AccountId,
+        #[ink(topic)]
+        collection_id: CollectionId,
+        #[ink(topic)]
+        token_id: TokenId,
+        price: Balance,
     }
 
     #[ink(storage)]
@@ -69,7 +83,7 @@ mod market {
 
         /// Ask index: Helps find the ask by the colectionId + tokenId
         /// (collectionId + tokenId) -> ask_id
-        asks_by_token: HashMap<(u64, u64), u128>,
+        asks_by_token: HashMap<(CollectionId, TokenId), u128>,
 
         /// Last Ask ID
         last_ask_id: u128,
@@ -114,15 +128,9 @@ mod market {
             self.ft_contract = ft_contract;
         }
 
-        /// Get address balance in quote currency
-        #[ink(message)]
-        pub fn get_balance(&self, quote_id: u64) -> Balance {
-            self.balance_of_or_zero(&self.env().caller())
-        }
-
         /// User: Place a deposited NFT for sale
         #[ink(message)]
-        pub fn ask(&mut self, collection_id: u64, token_id: u64, price: Balance) {
+        pub fn ask(&mut self, collection_id: CollectionId, token_id: TokenId, price: Balance) {
             let caller = self.env().caller();
             let owner = self.owner_of(collection_id, token_id);
             if owner.is_none() {
@@ -133,15 +141,27 @@ mod market {
                 return;
             }
 
-            if self.asks_by_token.get(&(collection_id, token_id)).is_some() {
-                return;
-            }
-
             // Place an ask (into asks with a new Ask ID)
             let ask_id = self.last_ask_id + 1;
             let ask = (collection_id, token_id, price, caller);
             self.last_ask_id = ask_id;
-            self.asks.insert(ask_id, ask.clone());
+            let result = self.asks.insert(ask_id, ask.clone());
+            if let Some((_, _, old_price, _)) = result {
+                Self::env().emit_event(OfferUpdated {
+                    seller: caller,
+                    collection_id,
+                    token_id,
+                    old_price,
+                    new_price: price,
+                });
+            } else {
+                Self::env().emit_event(OfferCreated {
+                    seller: caller,
+                    collection_id,
+                    token_id,
+                    price,
+                });
+            }
 
             // Record that token is being sold by this user (in asks_by_token) in reverse lookup index
             self.asks_by_token.insert((collection_id, token_id), ask_id);
@@ -161,13 +181,13 @@ mod market {
 
         /// Get ask by token
         #[ink(message)]
-        pub fn get_ask_id_by_token(&self, collection_id: u64, token_id: u64) -> u128 {
+        pub fn get_ask_id_by_token(&self, collection_id: CollectionId, token_id: TokenId) -> u128 {
             *self.asks_by_token.get(&(collection_id, token_id)).unwrap()
         }
 
         /// Cancel an ask
         #[ink(message)]
-        pub fn cancel(&mut self, collection_id: u64, token_id: u64) {
+        pub fn cancel(&mut self, collection_id: CollectionId, token_id: TokenId) {
 
             // Ensure that sender owns this ask
             let ask_id = *self.asks_by_token.get(&(collection_id, token_id)).unwrap();
@@ -180,16 +200,16 @@ mod market {
             self.remove_ask(collection_id, token_id, ask_id);
 
             // Transfer token back to user through NFT Vault (Emit WithdrawNFT event)
-            Self::env().emit_event(WithdrawNFT {
-                address: user,
-                collection_id: collection_id + 0x100000000,
-                token_id: token_id + 0x200000000,
+            Self::env().emit_event(OfferCancelled {
+                seller: self.env().caller().clone(),
+                collection_id,
+                token_id,
             });
         }
 
         /// Match an ask
         #[ink(message)]
-        pub fn buy(&mut self, collection_id: u64, token_id: u64) {
+        pub fn buy(&mut self, collection_id: CollectionId, token_id: TokenId, new_price: Balance) {
             let buyer = self.env().caller();
 
             // Get the ask
@@ -198,7 +218,8 @@ mod market {
 
             // Check that buyer has enough balance
             let initial_buyer_balance = self.balance_of_or_zero(&buyer);
-            assert!(initial_buyer_balance >= price);
+            assert!(initial_buyer_balance > new_price);
+            assert!(new_price >= price);
 
             // Subtract balance from buyer and increase balance of the seller and owner (due to commission)
             let initial_seller_balance = self.balance_of_or_zero(&seller);
@@ -211,15 +232,17 @@ mod market {
             self.remove_ask(collection_id, token_id, ask_id);
 
             // Transfer NFT token to buyer through NFT Vault (Emit WithdrawNFT event)
-            Self::env().emit_event(WithdrawNFT {
-                address: self.env().caller().clone(),
-                collection_id: collection_id + 0x100000000,
-                token_id: token_id + 0x200000000,
+            Self::env().emit_event(Traded {
+                seller,
+                buyer: self.env().caller().clone(),
+                collection_id,
+                token_id,
+                price,
             });
         }
 
         /// Transfer NFT
-        fn transfer_nft(&self, buyer: AccountId, collection_id: u64, token_id: u64, seller: AccountId) {
+        fn transfer_nft(&self, buyer: AccountId, collection_id: CollectionId, token_id: TokenId, seller: AccountId) {
             let call_params = build_call::<DefaultEnvironment>()
                 .callee(self.nft_contract)
                 .exec_input(
@@ -252,7 +275,7 @@ mod market {
         }
 
         /// Owner of token
-        fn owner_of(&self, collection_id: u64, token_id: u64) -> Option<AccountId> {
+        fn owner_of(&self, collection_id: CollectionId, token_id: TokenId) -> Option<AccountId> {
             if let Ok(owner) = build_call::<DefaultEnvironment>()
                 .callee(self.nft_contract)
                 .exec_input(
@@ -287,7 +310,7 @@ mod market {
             0
         }
 
-        fn remove_ask(&mut self, collection_id: u64, token_id: u64, ask_id: u128) {
+        fn remove_ask(&mut self, collection_id: CollectionId, token_id: TokenId, ask_id: u128) {
             // Remove the record that token is being sold by this user (from asks_by_token)
             let _ = self.asks_by_token.take(&(collection_id, token_id));
 
@@ -298,25 +321,6 @@ mod market {
 
 
     #[cfg(test)]
-    mod tests {
-        /// Imports all the definitions from the outer scope so we can use them here.
-        use super::*;
-
-        /// We test if the default constructor does its job.
-        #[test]
-        fn new_works() {
-            // let matcher = NFTMarket::new();
-            // assert_eq!(matcher.get_last_ask_id(), 0);
-        }
-
-        // We test a simple use case of our contract.
-        // #[test]
-        // fn it_works() {
-        //     let mut flipper = Flipper::new(false);
-        //     assert_eq!(flipper.get(), false);
-        //     flipper.flip();
-        //     assert_eq!(flipper.get(), true);
-        // }
-    }
+    mod tests {}
 }
 

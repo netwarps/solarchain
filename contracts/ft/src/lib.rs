@@ -16,10 +16,6 @@ mod erc20 {
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct Erc20 {
-        /// Owner
-        owner: AccountId,
-        /// Admin
-        admin: AccountId,
         /// Total token supply.
         total_supply: Lazy<Balance>,
         /// Mapping from owner to number of owned token.
@@ -77,26 +73,11 @@ mod erc20 {
             let caller = Self::env().caller();
             self.balances.insert(&caller, &initial_supply);
             Lazy::set(&mut self.total_supply, initial_supply);
-            self.admin = caller;
-            self.owner = caller;
             Self::env().emit_event(Transfer {
                 from: None,
                 to: Some(caller),
                 value: initial_supply,
             });
-        }
-
-        /// Set the admin for ft contract
-        #[ink(message)]
-        pub fn set_admin(&mut self, admin: AccountId) {
-            assert_eq!(self.env().caller(), self.owner);
-            self.admin = admin;
-        }
-
-        /// Get the admin for ft contract
-        #[ink(message)]
-        pub fn get_admin(&self) -> AccountId {
-            return self.admin;
         }
 
         /// Returns the total token supply.
@@ -144,9 +125,6 @@ mod erc20 {
         /// works using references which are more efficient in Wasm.
         #[inline]
         fn allowance_impl(&self, owner: &AccountId, spender: &AccountId) -> Balance {
-            if spender == &self.admin {
-                return self.balances.get(owner).unwrap_or_default();
-            }
             self.allowances.get((owner, spender)).unwrap_or_default()
         }
 

@@ -51,6 +51,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod token_info;
+mod test;
 
 use ink_lang as ink;
 
@@ -76,31 +77,24 @@ pub mod erc721_extension {
         Encode,
     };
     use crate::token_info::TokenInfo;
-    // use ink_env::AccountId;
-    // use ink_env::AccountId;
 
     /// A token ID.
     pub type TokenId = u64;
 
+    /// A collection ID.
+    pub type CollectionId = u64;
+
     #[ink(storage)]
     #[derive(Default)]
     pub struct Erc721Extension {
-        /// Owner
-        owner: AccountId,
-        /// Admin
-        admin: AccountId,
         /// Symbols of ERC20 Token, by (name, symbol)
         symbols: Lazy<(String, String)>,
         /// Mapping from owner to number of owned token.
         owned_tokens_count: StorageHashMap<AccountId, u64>,
-        // /// Mapping from owner to operator approvals.
-        // operator_approvals: StorageHashMap<(AccountId, AccountId), bool>,
         /// Mapping from owner to list of owned token IDs
-        owned_tokens: StorageHashMap<AccountId, Vec<TokenId>>,
+        owned_tokens: StorageHashMap<AccountId, Vec<(CollectionId, TokenId)>>,
         /// Mapping from token_id to token info, such as owner, approval, etc.
-        token_collection: StorageHashMap<TokenId, TokenInfo>,
-        // /// Disallow transfers if paused is true.
-        // paused: bool,
+        token_collection: StorageHashMap<(CollectionId, TokenId), TokenInfo>,
     }
 
     #[derive(Encode, Decode, Debug, PartialEq, Eq, Copy, Clone)]
@@ -155,30 +149,12 @@ pub mod erc721_extension {
         #[ink(constructor)]
         pub fn new(name: String, symbols: String) -> Self {
             Self {
-                owner: Self::env().caller(),
-                admin: Self::env().caller(),
                 symbols: Lazy::new((name, symbols)),
                 owned_tokens_count: Default::default(),
-                // operator_approvals: Default::default(),
                 owned_tokens: Default::default(),
                 token_collection: Default::default(),
-                // paused: false,
             }
         }
-
-        /// Set the admin for nft contract
-        #[ink(message)]
-        pub fn set_admin(&mut self, admin: AccountId) {
-            assert_eq!(self.env().caller(), self.owner);
-            self.admin = admin;
-        }
-
-        /// Get the admin for nft contract
-        #[ink(message)]
-        pub fn get_admin(&self) -> AccountId {
-            return self.admin;
-        }
-
         /// Returns the name of the token.
         #[ink(message)]
         pub fn name(&self) -> String {
@@ -187,8 +163,8 @@ pub mod erc721_extension {
 
         /// Returns the Uniform Resource Identifier (URI) for `token_id` token.
         #[ink(message)]
-        pub fn token_url(&self, token_id: TokenId) -> Option<String> {
-            match self.token_collection.get(&token_id) {
+        pub fn token_url(&self, collection_id: CollectionId, token_id: TokenId) -> Option<String> {
+            match self.token_collection.get(&(collection_id, token_id)) {
                 Some(token_info) => token_info.url_storage(),
                 _ => None
             }
@@ -210,45 +186,26 @@ pub mod erc721_extension {
 
         /// Returns the owner of the token.
         #[ink(message, selector = 0x6F776E65)]
-        pub fn owner_of(&self, id: TokenId) -> Option<AccountId> {
-            if let Some(token_info) = self.token_collection.get(&id) {
+        pub fn owner_of(&self, collection_id: CollectionId, id: TokenId) -> Option<AccountId> {
+            if let Some(token_info) = self.token_collection.get(&(collection_id, id)) {
                 return Some(token_info.owner());
             }
-            let a = self.env().account_id();
-            Some(a)
-            // None
+            None
         }
 
         /// Returns the approved account ID for this token if any.
         #[ink(message)]
-        pub fn get_approved(&self, id: TokenId) -> Option<AccountId> {
-            if let Some(token_info) = self.token_collection.get(&id) {
+        pub fn get_approved(&self, collection_id: CollectionId, id: TokenId) -> Option<AccountId> {
+            if let Some(token_info) = self.token_collection.get(&(collection_id, id)) {
                 return token_info.approval();
             }
             None
         }
 
-        // /// Returns `true` if the operator is approved by the owner.
-        // #[ink(message)]
-        // pub fn is_approved_for_all(&self, owner: AccountId, operator: AccountId) -> bool {
-        //     self.approved_for_all(owner, operator)
-        // }
-
-        // /// Approves or disapproves the operator for all tokens of the caller.
-        // #[ink(message)]
-        // pub fn set_approval_for_all(
-        //     &mut self,
-        //     to: AccountId,
-        //     approved: bool,
-        // ) -> Result<(), Error> {
-        //     self.approve_for_all(to, approved)?;
-        //     Ok(())
-        // }
-
         /// Approves the account to transfer the specified token on behalf of the caller.
         #[ink(message)]
-        pub fn approve(&mut self, to: Option<AccountId>, id: TokenId) -> Result<(), Error> {
-            self.approve_for(to, id)?;
+        pub fn approve(&mut self, to: Option<AccountId>, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
+            self.approve_for(to, collection_id, id)?;
             Ok(())
         }
 
@@ -258,10 +215,11 @@ pub mod erc721_extension {
         pub fn transfer(
             &mut self,
             destination: AccountId,
+            collection_id: CollectionId,
             id: TokenId,
         ) -> Result<(), Error> {
             let caller = self.env().caller();
-            self.transfer_token_from(&caller, &destination, id)?;
+            self.transfer_token_from(&caller, &destination, collection_id, id)?;
             Ok(())
         }
 
@@ -272,40 +230,40 @@ pub mod erc721_extension {
             &mut self,
             from: AccountId,
             to: AccountId,
+            collection_id: CollectionId,
             id: TokenId,
         ) -> Result<(), Error> {
-            self.transfer_token_from(&from, &to, id)?;
+            self.transfer_token_from(&from, &to, collection_id, id)?;
             Ok(())
         }
 
         /// Creates a new token.
         #[ink(message)]
         pub fn mint(&mut self, to: AccountId, collection_id: u64, id: TokenId) -> Result<(), Error> {
-            let _ = self.before_transfer(None, Some(to), id)?;
-            self.add_token_to(&to, id, Some(collection_id))?;
+            let _ = self.before_transfer(None, Some(to), collection_id, id)?;
+            self.add_token_to(&to, collection_id, id)?;
             self.env().emit_event(Transfer {
                 from: Some(AccountId::from([0x0; 32])),
                 to: Some(to),
                 id,
             });
-            // self.record_uri_by_token_id(id, token_uri)?;
             Ok(())
         }
 
         /// Deletes an existing token. Only the owner can burn the token.
         #[ink(message)]
-        pub fn burn(&mut self, id: TokenId) -> Result<(), Error> {
+        pub fn burn(&mut self, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
             let caller = self.env().caller();
 
-            if !self.exists(id) {
+            if !self.exists(collection_id, id) {
                 return Err(Error::TokenNotFound);
             }
 
-            let token_info = self.token_collection.get(&id).unwrap();
+            let token_info = self.token_collection.get(&(collection_id, id)).unwrap();
             if token_info.owner() != caller {
                 return Err(Error::NotOwner);
             }
-            self.before_transfer(Some(caller), None, id)?;
+            self.before_transfer(Some(caller), None, collection_id, id)?;
             let Self {
                 owned_tokens_count,
                 token_collection,
@@ -313,7 +271,7 @@ pub mod erc721_extension {
             } = self;
 
             decrease_counter_of(owned_tokens_count, &caller)?;
-            token_collection.take(&id);
+            token_collection.take(&(collection_id, id));
 
             self.env().emit_event(Transfer {
                 from: Some(caller),
@@ -324,34 +282,19 @@ pub mod erc721_extension {
         }
 
         #[ink(message)]
-        pub fn all_token_by_account(&self, account: AccountId) -> Option<Vec<TokenId>> {
+        pub fn all_token_by_account(&self, account: AccountId) -> Option<Vec<(CollectionId, TokenId)>> {
             self.owned_tokens.get(&account).cloned()
         }
 
-        // #[ink(message)]
-        // pub fn pause(&mut self) {
-        //     self.paused = true;
-        // }
-
-        // #[ink(message)]
-        // pub fn unpause(&mut self) {
-        //     self.paused = false;
-        // }
-
-        // #[ink(message)]
-        // pub fn paused(&self) -> bool {
-        //     self.paused
-        // }
-
         #[ink(message)]
-        pub fn set_token_uri(&mut self, token_id: TokenId, uri: String) -> Result<(), Error> {
+        pub fn set_token_uri(&mut self, collection_id: CollectionId, token_id: TokenId, uri: String) -> Result<(), Error> {
             let caller = self.env().caller();
 
-            if !self.approved_or_owner(Some(caller), token_id) {
+            if !self.approved_or_owner(Some(caller), collection_id, token_id) {
                 return Err(Error::NotAllowed);
             }
 
-            return match self.token_collection.get_mut(&token_id) {
+            return match self.token_collection.get_mut(&(collection_id, token_id)) {
                 Some(token_info) => {
                     token_info.set_url_storage(Some(uri));
                     Ok(())
@@ -363,19 +306,15 @@ pub mod erc721_extension {
         /// Check that transfer can be executed or not.
         #[inline]
         fn before_transfer(&mut self, from: Option<AccountId>,
-                           to: Option<AccountId>, token_id: TokenId) -> Result<(), Error> {
-            // if self.paused {
-            //     return Err(Error::NotAllowed);
-            // }
-
+                           to: Option<AccountId>, collection_id: CollectionId, token_id: TokenId) -> Result<(), Error> {
             if from.is_none() {
-                self.add_token_to_token_collection(token_id)?;
+                self.add_token_to_token_collection(collection_id, token_id)?;
             } else {
-                self.remove_token_from_owner(from.unwrap(), token_id)?;
+                self.remove_token_from_owner(from.unwrap(), collection_id, token_id)?;
             }
 
             if let Some(receiver) = to {
-                self.add_token_to_owner(receiver, token_id);
+                self.add_token_to_owner(receiver, collection_id, token_id);
             }
 
             Ok(())
@@ -383,58 +322,53 @@ pub mod erc721_extension {
 
         /// Append token_id to token_collection, all properties are default.
         #[inline]
-        fn add_token_to_token_collection(&mut self, token_id: TokenId) -> Result<(), Error> {
-            if self.exists(token_id) {
+        fn add_token_to_token_collection(&mut self, collection_id: CollectionId, token_id: TokenId) -> Result<(), Error> {
+            if self.exists(collection_id, token_id) {
                 return Err(Error::TokenExists);
             }
 
             let token_info = Default::default();
 
-            let _ = self.token_collection.insert(token_id, token_info);
+            let _ = self.token_collection.insert((collection_id, token_id), token_info);
             Ok(())
         }
 
         #[inline]
-        fn remove_token_from_token_collection(&mut self, token_id: TokenId) {
-            let _ = self.token_collection.take(&token_id);
-        }
-
-        #[inline]
-        fn add_token_to_owner(&mut self, to: AccountId, token_id: TokenId) {
+        fn add_token_to_owner(&mut self, to: AccountId, collection_id: CollectionId, token_id: TokenId) {
             let token_index = self.balance_of(to);
 
             match self.owned_tokens.entry(to) {
                 Entry::Occupied(mut o) => {
-                    o.get_mut().push(token_id);
+                    o.get_mut().push((collection_id, token_id));
                 }
                 Entry::Vacant(v) => {
                     let mut token_vector = Vec::new();
-                    token_vector.push(token_id);
+                    token_vector.push((collection_id, token_id));
                     v.insert(token_vector);
                 }
             }
-            let token_info = self.token_collection.get_mut(&token_id).unwrap();
+            let token_info = self.token_collection.get_mut(&(collection_id, token_id)).unwrap();
             token_info.set_owned_index(token_index);
         }
 
         #[inline]
-        fn remove_token_from_owner(&mut self, from: AccountId, token_id: TokenId) -> Result<(), Error> {
+        fn remove_token_from_owner(&mut self, from: AccountId, collection_id: CollectionId, token_id: TokenId) -> Result<(), Error> {
             let last_token_index = if self.balance_of(from) == 0 {
                 0
             } else {
                 self.balance_of(from) - 1
             };
 
-            if self.token_collection.get(&token_id).is_none() {
+            if self.token_collection.get(&(collection_id, token_id)).is_none() {
                 return Err(Error::TokenNotFound);
             }
 
-            let token_index = match self.token_collection.entry(token_id) {
+            let token_index = match self.token_collection.entry((collection_id, token_id)) {
                 Entry::Occupied(o) => { o.get().owned_index() }
                 Entry::Vacant(_) => return Err(Error::TokenNotFound)
             };
 
-            let last_token_id: TokenId = match self.owned_tokens.entry(from) {
+            let (last_token_collection_id, last_token_id) = match self.owned_tokens.entry(from) {
                 Entry::Occupied(o) => {
                     if o.get().len() < last_token_index as usize {
                         return Err(Error::TokenNotFound);
@@ -444,7 +378,7 @@ pub mod erc721_extension {
                 Entry::Vacant(_) => return Err(Error::TokenNotFound)
             };
 
-            let last_token_info = match self.token_collection.get_mut(&last_token_id) {
+            let last_token_info = match self.token_collection.get_mut(&(last_token_collection_id, last_token_id)) {
                 Some(info) => info,
                 None => return Err(Error::TokenNotFound)
             };
@@ -456,7 +390,7 @@ pub mod erc721_extension {
                     if o.get().len() < last_token_index as usize {
                         return Err(Error::TokenNotFound);
                     }
-                    o.get_mut()[token_index as usize] = last_token_id;
+                    o.get_mut()[token_index as usize] = (last_token_collection_id, last_token_id);
                 }
                 _ => return Err(Error::TokenNotFound)
             };
@@ -470,11 +404,12 @@ pub mod erc721_extension {
             &mut self,
             from: &AccountId,
             to: &AccountId,
+            collection_id: CollectionId,
             id: TokenId,
         ) -> Result<(), Error> {
             let caller = self.env().caller();
 
-            if !self.approved_or_owner(Some(caller), id) {
+            if !self.approved_or_owner(Some(caller), collection_id, id) {
                 return Err(Error::NotApproved);
             };
 
@@ -482,12 +417,12 @@ pub mod erc721_extension {
                 return Err(Error::NotAllowed);
             };
 
-            if !self.exists(id) {
+            if !self.exists(collection_id, id) {
                 return Err(Error::TokenNotFound);
             };
 
             if from == to {
-                self.clear_approval(caller, id);
+                self.clear_approval(caller, collection_id, id);
                 self.env().emit_event(Transfer {
                     from: Some(*from),
                     to: Some(*to),
@@ -495,12 +430,12 @@ pub mod erc721_extension {
                 });
                 return Ok(());
             }
-            let _ = self.before_transfer(Some(*from), Some(*to), id)?;
+            let _ = self.before_transfer(Some(*from), Some(*to), collection_id, id)?;
 
             // TODO: This may be the caller.
-            self.clear_approval(*from, id);
-            self.remove_token_from(from, id)?;
-            self.add_token_to(to, id, None)?;
+            self.clear_approval(*from, collection_id, id);
+            self.remove_token_from(from, collection_id, id)?;
+            self.add_token_to(to, collection_id, id)?;
             self.env().emit_event(Transfer {
                 from: Some(*from),
                 to: Some(*to),
@@ -514,6 +449,7 @@ pub mod erc721_extension {
         fn remove_token_from(
             &mut self,
             from: &AccountId,
+            collection_id: CollectionId,
             id: TokenId,
         ) -> Result<(), Error> {
             let Self {
@@ -521,7 +457,7 @@ pub mod erc721_extension {
                 owned_tokens_count,
                 ..
             } = self;
-            let token_info = token_collection.get_mut(&id).unwrap();
+            let token_info = token_collection.get_mut(&(collection_id, id)).unwrap();
             token_info.set_owner(AccountId::default());
             decrease_counter_of(owned_tokens_count, from)?;
             let v = self.owned_tokens.get_mut(from).unwrap();
@@ -531,7 +467,7 @@ pub mod erc721_extension {
 
         /// Adds the token `id` to the `to` AccountID.
         #[inline]
-        fn add_token_to(&mut self, to: &AccountId, id: TokenId, collection_id: Option<u64>) -> Result<(), Error> {
+        fn add_token_to(&mut self, to: &AccountId, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
             let Self {
                 token_collection,
                 owned_tokens_count,
@@ -539,7 +475,7 @@ pub mod erc721_extension {
             } = self;
 
             // Check whether `to` owned token.
-            let token_info = token_collection.get_mut(&id).unwrap();
+            let token_info = token_collection.get_mut(&(collection_id, id)).unwrap();
             if token_info.owner() == *to {
                 return Err(Error::TokenExists);
             }
@@ -548,53 +484,19 @@ pub mod erc721_extension {
             increase_counter_of(entry);
             token_info.set_owner(*to);
 
-            if let Some(coll_id) = collection_id {
-                token_info.set_collection(coll_id);
-            }
-
             Ok(())
         }
-
-        /// Records the URI info by TokenId
-        #[inline]
-        fn record_uri_by_token_id(&mut self, token_id: TokenId, token_url: Option<String>) -> Result<(), Error> {
-            let token_info = self.token_collection.get_mut(&token_id).unwrap();
-            token_info.set_url_storage(token_url);
-            Ok(())
-        }
-
-        // /// Approves or disapproves the operator to transfer all tokens of the caller.
-        // #[inline]
-        // fn approve_for_all(
-        //     &mut self,
-        //     to: AccountId,
-        //     approved: bool,
-        // ) -> Result<(), Error> {
-        //     let caller = self.env().caller();
-        //     self.env().emit_event(ApprovalForAll {
-        //         owner: caller,
-        //         operator: to,
-        //         approved,
-        //     });
-        //     let key = (caller, to);
-        //     if !approved {
-        //         self.operator_approvals.take(&key);
-        //     } else {
-        //         self.operator_approvals.insert(key, approved);
-        //     }
-        //     Ok(())
-        // }
 
         /// Approve the passed `AccountId` to transfer the specified token on behalf of the message's sender.
         #[inline]
-        fn approve_for(&mut self, to: Option<AccountId>, id: TokenId) -> Result<(), Error> {
+        fn approve_for(&mut self, to: Option<AccountId>, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
             // Check token exists or not
-            if !self.exists(id) {
+            if !self.exists(collection_id, id) {
                 return Err(Error::TokenNotFound);
             }
 
             let caller = self.env().caller();
-            let owner = self.owner_of(id);
+            let owner = self.owner_of(collection_id, id);
             // Check ownership
             if !(owner == Some(caller))
             // || self.approved_for_all(owner.expect("Error with AccountId"), caller))
@@ -608,7 +510,7 @@ pub mod erc721_extension {
                 to.clone()
             };
 
-            let token_info = self.token_collection.get_mut(&id).unwrap();
+            let token_info = self.token_collection.get_mut(&(collection_id, id)).unwrap();
             token_info.set_approval(approval);
 
             self.env().emit_event(Approval {
@@ -621,8 +523,8 @@ pub mod erc721_extension {
 
         /// Removes existing approval from token `id`.
         #[inline]
-        fn clear_approval(&mut self, caller: AccountId, id: TokenId) {
-            let token_info = self.token_collection.get_mut(&id).unwrap();
+        fn clear_approval(&mut self, caller: AccountId, collection_id: CollectionId, id: TokenId) {
+            let token_info = self.token_collection.get_mut(&(collection_id, id)).unwrap();
             token_info.set_approval(None);
             self.env().emit_event(Approval {
                 from: caller,
@@ -637,25 +539,12 @@ pub mod erc721_extension {
             *self.owned_tokens_count.get(of).unwrap_or(&0)
         }
 
-        // /// Gets an operator on other Account's behalf.
-        // #[inline]
-        // fn approved_for_all(&self, owner: AccountId, operator: AccountId) -> bool {
-        //     *self
-        //         .operator_approvals
-        //         .get(&(owner, operator))
-        //         .unwrap_or(&false)
-        // }
-
         /// Returns true if the `AccountId` `from` is the owner of token `id`
         /// or it has been approved on behalf of the token `id` owner.
         #[inline]
-        fn approved_or_owner(&self, from: Option<AccountId>, id: TokenId) -> bool {
-            if from == Some(self.admin) {
-                return true;
-            }
-
-            let owner = self.owner_of(id);
-            let approval = if let Some(token_info) = self.token_collection.get(&id) {
+        fn approved_or_owner(&self, from: Option<AccountId>, collection_id: CollectionId, id: TokenId) -> bool {
+            let owner = self.owner_of(collection_id, id);
+            let approval = if let Some(token_info) = self.token_collection.get(&(collection_id, id)) {
                 token_info.approval()
             } else {
                 None
@@ -663,18 +552,15 @@ pub mod erc721_extension {
             from != Some(AccountId::from([0x0; 32]))
                 && (from == owner
                 || from == approval
-                //     || self.approved_for_all(
-                //     owner.expect("Error with AccountId"),
-                //     from.expect("Error with AccountId"),
-                // )
             )
         }
 
         /// Returns true if token `id` exists or false if it does not.
         /// TODO: Why need two conditions?
         #[inline]
-        fn exists(&self, id: TokenId) -> bool {
-            self.token_collection.get(&id).is_some() && self.token_collection.contains_key(&id)
+        fn exists(&self, collection_id: CollectionId, id: TokenId) -> bool {
+            self.token_collection.get(&(collection_id, id)).is_some() &&
+                self.token_collection.contains_key(&(collection_id, id))
         }
     }
 
@@ -692,7 +578,4 @@ pub mod erc721_extension {
         entry.and_modify(|v| *v += 1).or_insert(1);
     }
 
-    /// Unit tests
-    #[cfg(test)]
-    mod tests {}
 }

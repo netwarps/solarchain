@@ -58,8 +58,8 @@ mod market {
         /// Contract owner
         owner: AccountId,
 
-        /// Contract admin (server that will input/output quote currency)
-        admin: AccountId,
+        // /// Contract admin (server that will input/output quote currency)
+        // admin: AccountId,
 
         /////////////////////////////////////////////////////////////////////////////////
         // Asks
@@ -86,7 +86,6 @@ mod market {
         pub fn new(nft_contract: AccountId, ft_contract: AccountId) -> Self {
             Self {
                 owner: Self::env().caller(),
-                admin: Self::env().caller(),
                 asks: HashMap::new(),
                 asks_by_token: HashMap::new(),
                 last_ask_id: 0,
@@ -113,13 +112,6 @@ mod market {
         pub fn set_ft_contract(&mut self, ft_contract: AccountId) {
             self.ensure_only_owner();
             self.ft_contract = ft_contract;
-        }
-
-        /// Set contract admin
-        #[ink(message)]
-        pub fn set_admin(&mut self, admin: AccountId) {
-            self.ensure_only_owner();
-            self.admin = admin.clone();
         }
 
         /// Get address balance in quote currency
@@ -234,6 +226,7 @@ mod market {
                     ExecutionInput::new(Selector::new([0x74, 0x72, 0x66, 0x72]))
                         .push_arg(seller)
                         .push_arg(buyer)
+                        .push_arg(collection_id)
                         .push_arg(token_id)
                 )
                 .returns::<()>()
@@ -264,7 +257,7 @@ mod market {
                 .callee(self.nft_contract)
                 .exec_input(
                     ExecutionInput::new(Selector::new([0x6F, 0x77, 0x6E, 0x65]))
-                        // .push_arg(collection_id)
+                        .push_arg(collection_id)
                         .push_arg(token_id)
                 )
                 .returns::<ReturnType<Option<AccountId>>>()
@@ -277,11 +270,6 @@ mod market {
         /// Panic if the sender is not the contract owner
         fn ensure_only_owner(&self) {
             assert_eq!(self.env().caller(), self.owner);
-        }
-
-        /// Panic if the sender is not the contract admin
-        fn ensure_only_admin(&self) {
-            assert_eq!(self.env().caller(), self.admin);
         }
 
         /// Return address balance in quote currency or 0

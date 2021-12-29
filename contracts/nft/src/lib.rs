@@ -55,11 +55,6 @@ mod test;
 
 use ink_lang as ink;
 
-pub use self::erc721_extension::{
-    Erc721Extension,
-    Erc721ExtensionRef,
-};
-
 #[ink::contract]
 pub mod erc721_extension {
     // #[cfg(not(feature = "ink-as-dependency"))]

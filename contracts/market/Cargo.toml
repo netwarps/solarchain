@@ -7,12 +7,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ink_env = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false }
-ink_lang = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false }
-ink_metadata = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false, features = ["derive"], optional = true }
-ink_prelude = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false }
-ink_primitives = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false }
-ink_storage = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false }
+ink_env = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", tag = "v3.0.0-rc6", default-features = false }
+ink_lang = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", tag = "v3.0.0-rc6", default-features = false }
+ink_metadata = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", tag = "v3.0.0-rc6", default-features = false, features = ["derive"], optional = true }
+ink_prelude = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", tag = "v3.0.0-rc6", default-features = false }
+ink_primitives = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", tag = "v3.0.0-rc6", default-features = false }
+ink_storage = { version = "3.0.0-rc6", git = "https://github.com/paritytech/ink", tag = "v3.0.0-rc6", default-features = false }
 
 scale = { package = "parity-scale-codec", version = "2.1", default-features = false, features = ["derive"] }
 scale-info = { version = "1.0", default-features = false, features = ["derive"], optional = true }
@@ -39,3 +39,4 @@ std = [
     "scale-info",
     "scale-info/std",
 ]
+

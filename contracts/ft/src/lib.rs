@@ -5,24 +5,20 @@ use ink_lang as ink;
 #[ink::contract]
 mod erc20 {
     use ink_storage::{
-        lazy::{
-            Lazy,
-            Mapping,
-        },
-        traits::SpreadAllocate,
+        lazy::Lazy,
+        collections::HashMap,
     };
 
     /// A simple ERC-20 contract.
     #[ink(storage)]
-    #[derive(SpreadAllocate)]
     pub struct Erc20 {
         /// Total token supply.
         total_supply: Lazy<Balance>,
         /// Mapping from owner to number of owned token.
-        balances: Mapping<AccountId, Balance>,
+        balances: HashMap<AccountId, Balance>,
         /// Mapping of the token amount which an account is allowed to withdraw
         /// from another account.
-        allowances: Mapping<(AccountId, AccountId), Balance>,
+        allowances: HashMap<(AccountId, AccountId), Balance>,
     }
 
     /// Event emitted when a token transfer occurs.
@@ -63,21 +59,15 @@ mod erc20 {
         /// Creates a new ERC-20 contract with the specified initial supply.
         #[ink(constructor)]
         pub fn new(initial_supply: Balance) -> Self {
-            ink_lang::codegen::initialize_contract(|contract| {
-                Self::new_init(contract, initial_supply)
-            })
-        }
-
-        /// Default initializes the ERC-20 contract with the specified initial supply.
-        fn new_init(&mut self, initial_supply: Balance) {
+            let mut erc20 = Self {
+                total_supply: Lazy::new(initial_supply),
+                balances: Default::default(),
+                allowances: Default::default(),
+            };
             let caller = Self::env().caller();
-            self.balances.insert(&caller, &initial_supply);
-            Lazy::set(&mut self.total_supply, initial_supply);
-            Self::env().emit_event(Transfer {
-                from: None,
-                to: Some(caller),
-                value: initial_supply,
-            });
+            erc20.balances.insert(caller, initial_supply);
+
+            erc20
         }
 
         /// Returns the total token supply.
@@ -104,7 +94,7 @@ mod erc20 {
         /// works using references which are more efficient in Wasm.
         #[inline]
         fn balance_of_impl(&self, owner: &AccountId) -> Balance {
-            self.balances.get(owner).unwrap_or_default()
+            self.balances.get(owner).cloned().unwrap_or_default()
         }
 
         /// Returns the amount which `spender` is still allowed to withdraw from `owner`.
@@ -112,7 +102,7 @@ mod erc20 {
         /// Returns `0` if no allowance has been set.
         #[ink(message)]
         pub fn allowance(&self, owner: AccountId, spender: AccountId) -> Balance {
-            self.allowance_impl(&owner, &spender)
+            self.allowance_impl(owner, spender)
         }
 
         /// Returns the amount which `spender` is still allowed to withdraw from `owner`.
@@ -124,8 +114,8 @@ mod erc20 {
         /// Prefer to call this method over `allowance` since this
         /// works using references which are more efficient in Wasm.
         #[inline]
-        fn allowance_impl(&self, owner: &AccountId, spender: &AccountId) -> Balance {
-            self.allowances.get((owner, spender)).unwrap_or_default()
+        fn allowance_impl(&self, owner: AccountId, spender: AccountId) -> Balance {
+            self.allowances.get(&(owner, spender)).cloned().unwrap_or_default()
         }
 
         /// Transfers `value` amount of tokens from the caller's account to account `to`.
@@ -139,7 +129,7 @@ mod erc20 {
         #[ink(message, selector = 0x7472616E)]
         pub fn transfer(&mut self, to: AccountId, value: Balance) -> Result<()> {
             let from = self.env().caller();
-            self.transfer_from_to(&from, &to, value)
+            self.transfer_from_to(from, to, value)
         }
 
         /// Allows `spender` to withdraw from the caller's account multiple times, up to
@@ -151,7 +141,7 @@ mod erc20 {
         #[ink(message)]
         pub fn approve(&mut self, spender: AccountId, value: Balance) -> Result<()> {
             let owner = self.env().caller();
-            self.allowances.insert((&owner, &spender), &value);
+            self.allowances.insert((owner, spender), value);
             self.env().emit_event(Approval {
                 owner,
                 spender,
@@ -182,13 +172,13 @@ mod erc20 {
             value: Balance,
         ) -> Result<()> {
             let caller = self.env().caller();
-            let allowance = self.allowance_impl(&from, &caller);
+            let allowance = self.allowance_impl(from, caller);
             if allowance < value {
                 return Err(Error::InsufficientAllowance);
             }
-            self.transfer_from_to(&from, &to, value)?;
+            self.transfer_from_to(from, to, value)?;
             self.allowances
-                .insert((&from, &caller), &(allowance - value));
+                .insert((from, caller), allowance - value);
             Ok(())
         }
 
@@ -202,21 +192,21 @@ mod erc20 {
         /// the caller's account balance.
         fn transfer_from_to(
             &mut self,
-            from: &AccountId,
-            to: &AccountId,
+            from: AccountId,
+            to: AccountId,
             value: Balance,
         ) -> Result<()> {
-            let from_balance = self.balance_of_impl(from);
+            let from_balance = self.balance_of_impl(&from);
             if from_balance < value {
                 return Err(Error::InsufficientBalance);
             }
 
-            self.balances.insert(from, &(from_balance - value));
-            let to_balance = self.balance_of_impl(to);
-            self.balances.insert(to, &(to_balance + value));
+            self.balances.insert(from, from_balance - value);
+            let to_balance = self.balance_of_impl(&to);
+            self.balances.insert(to, to_balance + value);
             self.env().emit_event(Transfer {
-                from: Some(*from),
-                to: Some(*to),
+                from: Some(from),
+                to: Some(to),
                 value,
             });
             Ok(())
@@ -835,3 +825,4 @@ mod erc20 {
         result
     }
 }
+

@@ -140,12 +140,25 @@ mod market {
             self.nft_contract = nft_contract;
         }
 
+        /// Get NFT contract address
+        #[ink(message)]
+        pub fn get_nft_contract(&self) -> AccountId {
+            self.nft_contract
+        }
+
         /// Set FT contract address
         #[ink(message)]
         pub fn set_ft_contract(&mut self, ft_contract: AccountId) {
             self.ensure_only_owner();
             self.ft_contract = ft_contract;
         }
+
+        /// Get FT contract address
+        #[ink(message)]
+        pub fn get_ft_contract(&self) -> AccountId {
+            self.ft_contract
+        }
+
 
         /// User: Place a deposited NFT for sale
         #[ink(message)]

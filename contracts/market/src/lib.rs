@@ -73,7 +73,7 @@ mod market {
     }
 
     /// Error
-    #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone)]
+    #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone, Debug)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub enum Error {
         /// Invoke NFT failed
@@ -232,7 +232,7 @@ mod market {
 
         /// Match an ask
         #[ink(message)]
-        pub fn buy(&mut self, collection_id: CollectionId, token_id: TokenId, new_price: Balance) -> Result<(), Error> {
+        pub fn buy(&mut self, collection_id: CollectionId, token_id: TokenId, new_price: Balance) {
             let buyer = self.env().caller();
 
             // Get the ask
@@ -248,8 +248,10 @@ mod market {
             let initial_seller_balance = self.balance_of_or_zero(&seller);
             assert!(initial_seller_balance + price > initial_seller_balance); // overflow protection
 
-            self.transfer_ft(buyer, seller, price)?;
-            self.transfer_nft(buyer, collection_id, token_id, seller)?;
+            let ft_result = self.transfer_ft(buyer, seller, price);
+            assert_eq!(Ok(()), ft_result);
+            let nft_result = self.transfer_nft(buyer, collection_id, token_id, seller);
+            assert_eq!(Ok(()), nft_result);
 
             // Remove ask from everywhere
             self.remove_ask(collection_id, token_id, ask_id);
@@ -262,8 +264,6 @@ mod market {
                 token_id,
                 price,
             });
-
-            Ok(())
         }
 
         /// Transfer NFT
@@ -299,8 +299,6 @@ mod market {
                 return Ok(());
             }
             Err(Error::InvokeFTTransferFailed)
-
-            // .map_err(|_| )
         }
 
         /// Owner of token

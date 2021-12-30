@@ -113,6 +113,7 @@ pub mod erc721_extension {
         from: Option<AccountId>,
         #[ink(topic)]
         to: Option<AccountId>,
+        collection_id: CollectionId,
         #[ink(topic)]
         id: TokenId,
     }
@@ -131,6 +132,7 @@ pub mod erc721_extension {
     /// Event emitted when a token burned occurs.
     #[ink(event)]
     pub struct Burned {
+        caller: AccountId,
         #[ink(topic)]
         collection_id: CollectionId,
         #[ink(topic)]
@@ -289,6 +291,7 @@ pub mod erc721_extension {
             token_collection.take(&(collection_id, id));
 
             self.env().emit_event(Burned {
+                caller,
                 collection_id,
                 id,
             });
@@ -440,6 +443,7 @@ pub mod erc721_extension {
                 self.env().emit_event(Transfer {
                     from: Some(*from),
                     to: Some(*to),
+                    collection_id,
                     id,
                 });
                 return Ok(());
@@ -453,6 +457,7 @@ pub mod erc721_extension {
             self.env().emit_event(Transfer {
                 from: Some(*from),
                 to: Some(*to),
+                collection_id,
                 id,
             });
             Ok(())

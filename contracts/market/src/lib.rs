@@ -11,6 +11,11 @@ mod market {
     use ink_env::DefaultEnvironment;
     use ink_env::call::{build_call, ExecutionInput, Selector};
     use ink_env::call::utils::ReturnType;
+    use scale::{
+        Decode,
+        Encode,
+    };
+    use crate::market::Error::NotNFTOwner;
 
     /// A token ID.
     pub type TokenId = u64;
@@ -65,6 +70,20 @@ mod market {
         #[ink(topic)]
         token_id: TokenId,
         price: Balance,
+    }
+
+    /// Error
+    #[derive(Encode, Decode, Eq, PartialEq, Copy, Clone)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum Error {
+        /// Invoke NFT failed
+        InvokeNFTTransferFailed,
+        /// Invoke FT failed
+        InvokeFTTransferFailed,
+        /// Not owner for NFT
+        NotNFTOwner,
+        /// Token owner not found
+        OwnerNotFound,
     }
 
     #[ink(storage)]
@@ -130,30 +149,36 @@ mod market {
 
         /// User: Place a deposited NFT for sale
         #[ink(message)]
-        pub fn ask(&mut self, collection_id: CollectionId, token_id: TokenId, price: Balance) {
+        pub fn ask(&mut self, collection_id: CollectionId, token_id: TokenId, price: Balance) -> Result<(), Error> {
             let caller = self.env().caller();
             let owner = self.owner_of(collection_id, token_id);
             if owner.is_none() {
-                return;
+                return Err(Error::OwnerNotFound);
             }
             // Only the owner can set price for token.
             if owner.unwrap() != caller {
-                return;
+                return Err(NotNFTOwner);
             }
 
             // Place an ask (into asks with a new Ask ID)
             let ask_id = self.last_ask_id + 1;
             let ask = (collection_id, token_id, price, caller);
             self.last_ask_id = ask_id;
-            let result = self.asks.insert(ask_id, ask.clone());
-            if let Some((_, _, old_price, _)) = result {
-                Self::env().emit_event(OfferUpdated {
-                    seller: caller,
-                    collection_id,
-                    token_id,
-                    old_price,
-                    new_price: price,
-                });
+            self.asks.insert(ask_id, ask.clone());
+
+            // Record that token is being sold by this user (in asks_by_token) in reverse lookup index
+            let result = self.asks_by_token.insert((collection_id, token_id), ask_id);
+
+            if let Some(ask_id) = result {
+                if let Some((_, _, old_price, _)) = self.asks.get(&ask_id) {
+                    Self::env().emit_event(OfferUpdated {
+                        seller: caller,
+                        collection_id,
+                        token_id,
+                        old_price: *old_price,
+                        new_price: price,
+                    });
+                }
             } else {
                 Self::env().emit_event(OfferCreated {
                     seller: caller,
@@ -162,9 +187,7 @@ mod market {
                     price,
                 });
             }
-
-            // Record that token is being sold by this user (in asks_by_token) in reverse lookup index
-            self.asks_by_token.insert((collection_id, token_id), ask_id);
+            Ok(())
         }
 
         /// Get last ask ID
@@ -209,7 +232,7 @@ mod market {
 
         /// Match an ask
         #[ink(message)]
-        pub fn buy(&mut self, collection_id: CollectionId, token_id: TokenId, new_price: Balance) {
+        pub fn buy(&mut self, collection_id: CollectionId, token_id: TokenId, new_price: Balance) -> Result<(), Error> {
             let buyer = self.env().caller();
 
             // Get the ask
@@ -225,8 +248,8 @@ mod market {
             let initial_seller_balance = self.balance_of_or_zero(&seller);
             assert!(initial_seller_balance + price > initial_seller_balance); // overflow protection
 
-            self.transfer_ft(buyer, seller, price);
-            self.transfer_nft(buyer, collection_id, token_id, seller);
+            self.transfer_ft(buyer, seller, price)?;
+            self.transfer_nft(buyer, collection_id, token_id, seller)?;
 
             // Remove ask from everywhere
             self.remove_ask(collection_id, token_id, ask_id);
@@ -239,11 +262,13 @@ mod market {
                 token_id,
                 price,
             });
+
+            Ok(())
         }
 
         /// Transfer NFT
-        fn transfer_nft(&self, buyer: AccountId, collection_id: CollectionId, token_id: TokenId, seller: AccountId) {
-            let call_params = build_call::<DefaultEnvironment>()
+        fn transfer_nft(&self, buyer: AccountId, collection_id: CollectionId, token_id: TokenId, seller: AccountId) -> Result<(), Error> {
+            if let Ok(Ok(())) = build_call::<DefaultEnvironment>()
                 .callee(self.nft_contract)
                 .exec_input(
                     ExecutionInput::new(Selector::new([0x74, 0x72, 0x66, 0x72]))
@@ -252,15 +277,16 @@ mod market {
                         .push_arg(collection_id)
                         .push_arg(token_id)
                 )
-                .returns::<()>()
-                .params();
-
-            self.env().invoke_contract(&call_params).expect("call invocation must succeed");
+                .returns::<ReturnType<Result<(), Error>>>()
+                .fire() {
+                return Ok(());
+            }
+            Err(Error::InvokeNFTTransferFailed)
         }
 
         /// Transfer FT
-        fn transfer_ft(&self, buyer: AccountId, seller: AccountId, price: Balance) {
-            let call_params = build_call::<DefaultEnvironment>()
+        fn transfer_ft(&self, buyer: AccountId, seller: AccountId, price: Balance) -> Result<(), Error> {
+            if let Ok(Ok(())) = build_call::<DefaultEnvironment>()
                 .callee(self.ft_contract)
                 .exec_input(
                     ExecutionInput::new(Selector::new([0x74, 0x72, 0x66, 0x72]))
@@ -268,10 +294,13 @@ mod market {
                         .push_arg(seller)
                         .push_arg(price)
                 )
-                .returns::<()>()
-                .params();
+                .returns::<ReturnType<Result<(), Error>>>()
+                .fire() {
+                return Ok(());
+            }
+            Err(Error::InvokeFTTransferFailed)
 
-            self.env().invoke_contract(&call_params).expect("call invocation must succeed");
+            // .map_err(|_| )
         }
 
         /// Owner of token

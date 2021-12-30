@@ -117,6 +117,26 @@ pub mod erc721_extension {
         id: TokenId,
     }
 
+    /// Event emitted when a token minted occurs.
+    #[ink(event)]
+    pub struct Minted {
+        #[ink(topic)]
+        owner: AccountId,
+        #[ink(topic)]
+        collection_id: CollectionId,
+        #[ink(topic)]
+        id: TokenId,
+    }
+
+    /// Event emitted when a token burned occurs.
+    #[ink(event)]
+    pub struct Burned {
+        #[ink(topic)]
+        collection_id: CollectionId,
+        #[ink(topic)]
+        id: TokenId,
+    }
+
     /// Event emitted when a token approve occurs.
     #[ink(event)]
     pub struct Approval {
@@ -234,12 +254,12 @@ pub mod erc721_extension {
 
         /// Creates a new token.
         #[ink(message)]
-        pub fn mint(&mut self, to: AccountId, collection_id: u64, id: TokenId) -> Result<(), Error> {
+        pub fn mint(&mut self, to: AccountId, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
             let _ = self.before_transfer(None, Some(to), collection_id, id)?;
             self.add_token_to(&to, collection_id, id)?;
-            self.env().emit_event(Transfer {
-                from: Some(AccountId::from([0x0; 32])),
-                to: Some(to),
+            self.env().emit_event(Minted {
+                owner: to,
+                collection_id,
                 id,
             });
             Ok(())
@@ -268,9 +288,8 @@ pub mod erc721_extension {
             decrease_counter_of(owned_tokens_count, &caller)?;
             token_collection.take(&(collection_id, id));
 
-            self.env().emit_event(Transfer {
-                from: Some(caller),
-                to: Some(AccountId::from([0x0; 32])),
+            self.env().emit_event(Burned {
+                collection_id,
                 id,
             });
             Ok(())
@@ -572,5 +591,4 @@ pub mod erc721_extension {
     fn increase_counter_of(entry: Entry<AccountId, u64>) {
         entry.and_modify(|v| *v += 1).or_insert(1);
     }
-
 }

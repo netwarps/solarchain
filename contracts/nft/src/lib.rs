@@ -1,52 +1,4 @@
-//! # ERC-721
-//!
-//! This is an ERC-721 Token implementation.
-//!
-//! ## Warning
-//!
-//! This contract is an *example*. It is neither audited nor endorsed for production use.
-//! Do **not** rely on it to keep anything of value secure.
-//!
-//! ## Overview
-//!
-//! This contract demonstrates how to build non-fungible or unique tokens using ink!.
-//!
-//! ## Error Handling
-//!
-//! Any function that modifies the state returns a `Result` type and does not changes the state
-//! if the `Error` occurs.
-//! The errors are defined as an `enum` type. Any other error or invariant violation
-//! triggers a panic and therefore rolls back the transaction.
-//!
-//! ## Token Management
-//!
-//! After creating a new token, the function caller becomes the owner.
-//! A token can be created, transferred, or destroyed.
-//!
-//! Token owners can assign other accounts for transferring specific tokens on their behalf.
-//! It is also possible to authorize an operator (higher rights) for another account to handle tokens.
-//!
-//! ### Token Creation
-//!
-//! Token creation start by calling the `mint(&mut self, id: u64)` function.
-//! The token owner becomes the function caller. The Token ID needs to be specified
-//! as the argument on this function call.
-//!
-//! ### Token Transfer
-//!
-//! Transfers may be initiated by:
-//! - The owner of a token
-//! - The approved address of a token
-//! - An authorized operator of the current owner of a token
-//!
-//! The token owner can transfer a token by calling the `transfer` or `transfer_from` functions.
-//! An approved address can make a token transfer by calling the `transfer_from` function.
-//! Operators can transfer tokens on another account's behalf or can approve a token transfer
-//! for a different account.
-//!
-//! ### Token Removal
-//!
-//! Tokens can be destroyed by burning them. Only the token owner is allowed to burn a token.
+//! This is a NFT contract.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -56,7 +8,7 @@ mod test;
 use ink_lang as ink;
 
 #[ink::contract]
-pub mod erc721_extension {
+pub mod nft {
     // #[cfg(not(feature = "ink-as-dependency"))]
     use ink_storage::collections::{
         hashmap::Entry,
@@ -64,7 +16,10 @@ pub mod erc721_extension {
     };
     use ink_storage::lazy::Lazy;
     use ink_prelude::{
-        string::String,
+        string::{
+            String,
+            ToString,
+        },
         vec::Vec,
     };
     use scale::{
@@ -81,7 +36,7 @@ pub mod erc721_extension {
 
     #[ink(storage)]
     #[derive(Default)]
-    pub struct Erc721Extension {
+    pub struct NFT {
         /// Symbols of ERC20 Token, by (name, symbol)
         symbols: Lazy<(String, String)>,
         /// Mapping from owner to number of owned token.
@@ -104,6 +59,15 @@ pub mod erc721_extension {
         CannotRemove,
         CannotFetchValue,
         NotAllowed,
+    }
+
+    /// Event emitted when a error was triggered.
+    #[ink(event)]
+    pub struct ErrorEvent {
+        #[ink(topic)]
+        err: Error,
+        #[ink(topic)]
+        msg: String,
     }
 
     /// Event emitted when a token transfer occurs.
@@ -161,8 +125,8 @@ pub mod erc721_extension {
         approved: bool,
     }
 
-    impl Erc721Extension {
-        /// Creates a new ERC-721 token contract.
+    impl NFT {
+        /// Creates a new NFT contract.
         #[ink(constructor)]
         pub fn new(name: String, symbols: String) -> Self {
             Self {
@@ -273,11 +237,13 @@ pub mod erc721_extension {
             let caller = self.env().caller();
 
             if !self.exists(collection_id, id) {
+                self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                 return Err(Error::TokenNotFound);
             }
 
             let token_info = self.token_collection.get(&(collection_id, id)).unwrap();
             if token_info.owner() != caller {
+                self.send_error_event(Error::NotOwner, "Caller is not the owner for token. ".to_string());
                 return Err(Error::NotOwner);
             }
             self.before_transfer(Some(caller), None, collection_id, id)?;
@@ -308,6 +274,7 @@ pub mod erc721_extension {
             let caller = self.env().caller();
 
             if !self.approved_or_owner(Some(caller), collection_id, token_id) {
+                self.send_error_event(Error::NotAllowed, "Caller is not the owner or approval for token. ".to_string());
                 return Err(Error::NotAllowed);
             }
 
@@ -316,7 +283,10 @@ pub mod erc721_extension {
                     token_info.set_url_storage(Some(uri));
                     Ok(())
                 }
-                None => Err(Error::TokenNotFound)
+                None => {
+                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                    Err(Error::TokenNotFound)
+                }
             };
         }
 
@@ -341,6 +311,7 @@ pub mod erc721_extension {
         #[inline]
         fn add_token_to_token_collection(&mut self, collection_id: CollectionId, token_id: TokenId) -> Result<(), Error> {
             if self.exists(collection_id, token_id) {
+                self.send_error_event(Error::TokenExists, "Token is exists. ".to_string());
                 return Err(Error::TokenExists);
             }
 
@@ -376,28 +347,35 @@ pub mod erc721_extension {
                 self.balance_of(from) - 1
             };
 
-            if self.token_collection.get(&(collection_id, token_id)).is_none() {
-                return Err(Error::TokenNotFound);
-            }
-
             let token_index = match self.token_collection.entry((collection_id, token_id)) {
                 Entry::Occupied(o) => { o.get().owned_index() }
-                Entry::Vacant(_) => return Err(Error::TokenNotFound)
+                Entry::Vacant(_) => {
+                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                    return Err(Error::TokenNotFound);
+                }
             };
 
+            // Get the last token info inorder to swap.
             let (last_token_collection_id, last_token_id) = match self.owned_tokens.entry(from) {
                 Entry::Occupied(o) => {
                     if o.get().len() < last_token_index as usize {
+                        self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                         return Err(Error::TokenNotFound);
                     }
                     o.get()[last_token_index as usize]
                 }
-                Entry::Vacant(_) => return Err(Error::TokenNotFound)
+                Entry::Vacant(_) => {
+                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                    return Err(Error::TokenNotFound);
+                }
             };
 
             let last_token_info = match self.token_collection.get_mut(&(last_token_collection_id, last_token_id)) {
                 Some(info) => info,
-                None => return Err(Error::TokenNotFound)
+                None => {
+                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                    return Err(Error::TokenNotFound);
+                }
             };
 
             last_token_info.set_owned_index(token_index);
@@ -405,11 +383,15 @@ pub mod erc721_extension {
             match self.owned_tokens.entry(from) {
                 Entry::Occupied(mut o) => {
                     if o.get().len() < last_token_index as usize {
+                        self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                         return Err(Error::TokenNotFound);
                     }
                     o.get_mut()[token_index as usize] = (last_token_collection_id, last_token_id);
                 }
-                _ => return Err(Error::TokenNotFound)
+                _ => {
+                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                    return Err(Error::TokenNotFound);
+                }
             };
 
             Ok(())
@@ -427,14 +409,17 @@ pub mod erc721_extension {
             let caller = self.env().caller();
 
             if !self.approved_or_owner(Some(caller), collection_id, id) {
+                self.send_error_event(Error::NotApproved, "Caller is not the owner or approval for token. ".to_string());
                 return Err(Error::NotApproved);
             };
 
             if *to == AccountId::from([0x0; 32]) {
+                self.send_error_event(Error::NotAllowed, "Transfer token to zero address is not allowed. ".to_string());
                 return Err(Error::NotAllowed);
             };
 
             if !self.exists(collection_id, id) {
+                self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                 return Err(Error::TokenNotFound);
             };
 
@@ -496,6 +481,7 @@ pub mod erc721_extension {
             // Check whether `to` owned token.
             let token_info = token_collection.get_mut(&(collection_id, id)).unwrap();
             if token_info.owner() == *to {
+                self.send_error_event(Error::TokenExists, "Token is exists. ".to_string());
                 return Err(Error::TokenExists);
             }
 
@@ -511,22 +497,22 @@ pub mod erc721_extension {
         fn approve_for(&mut self, to: Option<AccountId>, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
             // Check token exists or not
             if !self.exists(collection_id, id) {
+                self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                 return Err(Error::TokenNotFound);
             }
 
             let caller = self.env().caller();
             let owner = self.owner_of(collection_id, id);
             // Check ownership
-            if !(owner == Some(caller))
-            // || self.approved_for_all(owner.expect("Error with AccountId"), caller))
-            {
+            if owner != Some(caller) {
+                self.send_error_event(Error::NotAllowed, "Caller is not the owner of token. ".to_string());
                 return Err(Error::NotAllowed);
             };
 
             let approval = if to == Some(AccountId::from([0x0; 32])) {
                 None
             } else {
-                to.clone()
+                to
             };
 
             let token_info = self.token_collection.get_mut(&(collection_id, id)).unwrap();
@@ -580,6 +566,14 @@ pub mod erc721_extension {
         fn exists(&self, collection_id: CollectionId, id: TokenId) -> bool {
             self.token_collection.get(&(collection_id, id)).is_some() &&
                 self.token_collection.contains_key(&(collection_id, id))
+        }
+
+        #[inline]
+        fn send_error_event(&self, err: Error, msg: String) {
+            self.env().emit_event(ErrorEvent {
+                err,
+                msg,
+            });
         }
     }
 

@@ -224,11 +224,11 @@ mod market {
         /// Cancel an ask
         #[ink(message)]
         pub fn cancel(&mut self, collection_id: CollectionId, token_id: TokenId) {
-
+            let caller = self.env().caller();
             // Ensure that sender owns this ask
             let ask_id = *self.asks_by_token.get(&(collection_id, token_id)).unwrap();
             let (_, _, _, user) = *self.asks.get(&ask_id).unwrap();
-            if self.env().caller() != self.owner {
+            if caller != self.owner {
                 assert_eq!(self.env().caller(), user);
             }
 
@@ -237,7 +237,7 @@ mod market {
 
             // Transfer token back to user through NFT Vault (Emit WithdrawNFT event)
             Self::env().emit_event(OfferCancelled {
-                seller: self.env().caller().clone(),
+                seller: caller,
                 collection_id,
                 token_id,
             });
@@ -272,7 +272,7 @@ mod market {
             // Transfer NFT token to buyer through NFT Vault (Emit WithdrawNFT event)
             Self::env().emit_event(Traded {
                 seller,
-                buyer: self.env().caller().clone(),
+                buyer,
                 collection_id,
                 token_id,
                 price,

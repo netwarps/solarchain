@@ -1,12 +1,12 @@
 /// Unit tests
 #[cfg(test)]
 mod tests {
-    use crate::Erc721Extension;
     use ink_env::{AccountId, test, call, DefaultEnvironment};
     use ink_lang as ink;
+    use crate::nft::NFT;
 
     fn set_sender(sender: AccountId) {
-        let callee = ink_env::account_id::<ink_env::DefaultEnvironment>();
+        let callee = ink_env::account_id::<ink_env::DefaultEnvironment>().unwrap();
         test::push_execution_context::<DefaultEnvironment>(
             sender,
             callee,
@@ -16,8 +16,8 @@ mod tests {
         );
     }
 
-    fn new() -> Erc721Extension {
-        Erc721Extension::new("hello".to_string(), "world".to_string())
+    fn new() -> NFT {
+        NFT::new("hello".to_string(), "world".to_string())
     }
 
     #[ink::test]

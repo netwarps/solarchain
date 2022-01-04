@@ -15,6 +15,8 @@ mod market {
         Decode,
         Encode,
     };
+    use ink_prelude::string::{String, ToString};
+    use ink_lang::{EmitEvent, Env};
     use crate::market::Error::NotNFTOwner;
 
     /// A token ID.

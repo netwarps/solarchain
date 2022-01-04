@@ -16,16 +16,14 @@ pub mod nft {
     };
     use ink_storage::lazy::Lazy;
     use ink_prelude::{
-        string::{
-            String,
-            ToString,
-        },
+        string::{String, ToString},
         vec::Vec,
     };
     use scale::{
         Decode,
         Encode,
     };
+    use ink_lang::{EmitEvent, Env};
     use crate::token_info::TokenInfo;
 
     /// A token ID.

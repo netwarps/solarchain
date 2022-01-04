@@ -86,6 +86,8 @@ mod market {
         NotNFTOwner,
         /// Token owner not found
         OwnerNotFound,
+        /// Token is not for sale.
+        NotForSale,
     }
 
     /// Event emitted when a error was triggered.
@@ -262,6 +264,10 @@ mod market {
             let buyer = self.env().caller();
 
             // Get the ask
+            if self.asks_by_token.get(&(collection_id, token_id)).is_none() {
+                self.send_error_event(Error::NotForSale, "Token is not for sale. ".to_string());
+                return;
+            }
             let ask_id = *self.asks_by_token.get(&(collection_id, token_id)).unwrap();
             let (_, _, price, seller) = *self.asks.get(&ask_id).unwrap();
 

@@ -80,6 +80,15 @@ pub mod nft {
         id: TokenId,
     }
 
+    /// Event emitted when set metadata to token.
+    #[ink(event)]
+    pub struct SetUrl {
+        #[ink(topic)]
+        collection_id: CollectionId,
+        token_id: TokenId,
+        metadata: String,
+    }
+
     /// Event emitted when a token minted occurs.
     #[ink(event)]
     pub struct Minted {
@@ -268,7 +277,7 @@ pub mod nft {
         }
 
         #[ink(message)]
-        pub fn set_token_uri(&mut self, collection_id: CollectionId, token_id: TokenId, uri: String) -> Result<(), Error> {
+        pub fn set_token_url(&mut self, collection_id: CollectionId, token_id: TokenId, uri: String) -> Result<(), Error> {
             let caller = self.env().caller();
 
             if !self.approved_or_owner(Some(caller), collection_id, token_id) {
@@ -278,7 +287,12 @@ pub mod nft {
 
             return match self.token_collection.get_mut(&(collection_id, token_id)) {
                 Some(token_info) => {
-                    token_info.set_url_storage(Some(uri));
+                    token_info.set_url_storage(Some(uri.clone()));
+                    self.env().emit_event(SetUrl {
+                        collection_id,
+                        token_id,
+                        metadata: uri,
+                    });
                     Ok(())
                 }
                 None => {

@@ -9,7 +9,7 @@ pub struct TokenInfo {
     owner: AccountId,
     approval: Option<AccountId>,
     owned_index: u64,
-    url_storage: Option<String>,
+    metadata: Option<String>,
 }
 
 impl TokenInfo {
@@ -22,8 +22,8 @@ impl TokenInfo {
     pub fn set_owned_index(&mut self, owned_index: u64) {
         self.owned_index = owned_index;
     }
-    pub fn set_url_storage(&mut self, url_storage: Option<String>) {
-        self.url_storage = url_storage;
+    pub fn set_metadata(&mut self, metadata: Option<String>) {
+        self.metadata = metadata;
     }
     pub fn owner(&self) -> AccountId {
         self.owner
@@ -34,7 +34,7 @@ impl TokenInfo {
     pub fn owned_index(&self) -> u64 {
         self.owned_index
     }
-    pub fn url_storage(&self) -> Option<String> {
-        self.url_storage.clone()
+    pub fn metadata(&self) -> Option<String> {
+        self.metadata.clone()
     }
 }

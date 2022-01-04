@@ -25,9 +25,9 @@ mod tests {
         let account_a = AccountId::from([1u8; 32]);
         let account_b = AccountId::from([2u8; 32]);
         let mut e = new();
-        let _ = e.mint(account_a, 1, 123);
-        let _ = e.mint(account_a, 1, 223);
-        let _ = e.mint(account_a, 1, 323);
+        let _ = e.mint(account_a, 1, 123, None);
+        let _ = e.mint(account_a, 1, 223, None);
+        let _ = e.mint(account_a, 1, 323, None);
         assert_eq!(e.owner_of(1, 223), Some(account_a));
     }
 
@@ -36,9 +36,9 @@ mod tests {
         let account_a = AccountId::from([1u8; 32]);
         let account_b = AccountId::from([2u8; 32]);
         let mut e = new();
-        let _ = e.mint(account_a, 1, 123);
-        let _ = e.mint(account_a, 1, 223);
-        let _ = e.mint(account_a, 1, 323);
+        let _ = e.mint(account_a, 1, 123, None);
+        let _ = e.mint(account_a, 1, 223, None);
+        let _ = e.mint(account_a, 1, 323, None);
         let _ = e.transfer_from(account_a, account_b, 1, 323);
         assert_eq!(e.owner_of(1, 323), Some(account_b));
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 223)])
@@ -49,9 +49,9 @@ mod tests {
         let account_a = AccountId::from([1u8; 32]);
         let account_b = AccountId::from([2u8; 32]);
         let mut e = new();
-        let _ = e.mint(account_a, 1, 123);
-        let _ = e.mint(account_a, 1, 223);
-        let _ = e.mint(account_a, 1, 323);
+        let _ = e.mint(account_a, 1, 123, None);
+        let _ = e.mint(account_a, 1, 223, None);
+        let _ = e.mint(account_a, 1, 323, None);
         let _ = e.transfer_from(account_a, account_b, 1, 223);
         assert_eq!(e.owner_of(1, 223), Some(account_b));
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 323)]);

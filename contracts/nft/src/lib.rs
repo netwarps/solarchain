@@ -151,9 +151,9 @@ pub mod nft {
 
         /// Returns the Uniform Resource Identifier (URI) for `token_id` token.
         #[ink(message)]
-        pub fn token_url(&self, collection_id: CollectionId, token_id: TokenId) -> Option<String> {
+        pub fn get_metadata(&self, collection_id: CollectionId, token_id: TokenId) -> Option<String> {
             match self.token_collection.get(&(collection_id, token_id)) {
-                Some(token_info) => token_info.url_storage(),
+                Some(token_info) => token_info.metadata(),
                 _ => None
             }
         }
@@ -227,9 +227,9 @@ pub mod nft {
 
         /// Creates a new token.
         #[ink(message)]
-        pub fn mint(&mut self, to: AccountId, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
+        pub fn mint(&mut self, to: AccountId, collection_id: CollectionId, id: TokenId, metadata: Option<String>) -> Result<(), Error> {
             let _ = self.before_transfer(None, Some(to), collection_id, id)?;
-            self.add_token_to(&to, collection_id, id)?;
+            self.add_token_to(&to, collection_id, id, metadata)?;
             self.env().emit_event(Minted {
                 owner: to,
                 collection_id,
@@ -276,8 +276,8 @@ pub mod nft {
             self.owned_tokens.get(&account).cloned()
         }
 
-        #[ink(message)]
-        pub fn set_token_url(&mut self, collection_id: CollectionId, token_id: TokenId, uri: String) -> Result<(), Error> {
+
+        pub fn set_token_url(&mut self, collection_id: CollectionId, token_id: TokenId, metadata: String) -> Result<(), Error> {
             let caller = self.env().caller();
 
             if !self.approved_or_owner(Some(caller), collection_id, token_id) {
@@ -287,11 +287,11 @@ pub mod nft {
 
             return match self.token_collection.get_mut(&(collection_id, token_id)) {
                 Some(token_info) => {
-                    token_info.set_url_storage(Some(uri.clone()));
+                    token_info.set_metadata(Some(metadata.clone()));
                     self.env().emit_event(SetUrl {
                         collection_id,
                         token_id,
-                        metadata: uri,
+                        metadata,
                     });
                     Ok(())
                 }
@@ -453,7 +453,7 @@ pub mod nft {
             // TODO: This may be the caller.
             self.clear_approval(*from, collection_id, id);
             self.remove_token_from(from, collection_id, id)?;
-            self.add_token_to(to, collection_id, id)?;
+            self.add_token_to(to, collection_id, id, None)?;
             self.env().emit_event(Transfer {
                 from: Some(*from),
                 to: Some(*to),
@@ -486,7 +486,8 @@ pub mod nft {
 
         /// Adds the token `id` to the `to` AccountID.
         #[inline]
-        fn add_token_to(&mut self, to: &AccountId, collection_id: CollectionId, id: TokenId) -> Result<(), Error> {
+        fn add_token_to(&mut self, to: &AccountId, collection_id: CollectionId,
+                        id: TokenId, metadata: Option<String>) -> Result<(), Error> {
             let Self {
                 token_collection,
                 owned_tokens_count,
@@ -503,6 +504,9 @@ pub mod nft {
             let entry = owned_tokens_count.entry(*to);
             increase_counter_of(entry);
             token_info.set_owner(*to);
+            if metadata.is_some() {
+                token_info.set_metadata(metadata);
+            }
 
             Ok(())
         }

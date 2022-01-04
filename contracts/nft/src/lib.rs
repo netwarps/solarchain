@@ -289,7 +289,10 @@ pub mod nft {
                 }
             };
         }
+    }
 
+    // Inline methods.
+    impl NFT {
         /// Check that transfer can be executed or not.
         #[inline]
         fn before_transfer(&mut self, from: Option<AccountId>,

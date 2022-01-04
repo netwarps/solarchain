@@ -86,6 +86,15 @@ mod market {
         OwnerNotFound,
     }
 
+    /// Event emitted when a error was triggered.
+    #[ink(event)]
+    pub struct ErrorEvent {
+        #[ink(topic)]
+        err: Error,
+        #[ink(topic)]
+        msg: String,
+    }
+
     #[ink(storage)]
     pub struct NFTMarket {
         /// Contract owner
@@ -100,7 +109,7 @@ mod market {
         /// Current asks: ask_id -> (collectionId, tokenId, price, seller)
         asks: HashMap<u128, (u64, u64, Balance, AccountId)>,
 
-        /// Ask index: Helps find the ask by the colectionId + tokenId
+        /// Ask index: Helps find the ask by the collectionId + tokenId
         /// (collectionId + tokenId) -> ask_id
         asks_by_token: HashMap<(CollectionId, TokenId), u128>,
 
@@ -166,10 +175,12 @@ mod market {
             let caller = self.env().caller();
             let owner = self.owner_of(collection_id, token_id);
             if owner.is_none() {
+                self.send_error_event(Error::OwnerNotFound, "Owner not found. ".to_string());
                 return Err(Error::OwnerNotFound);
             }
             // Only the owner can set price for token.
             if owner.unwrap() != caller {
+                self.send_error_event(Error::NotNFTOwner, "Caller is not owner for NFT.".to_string());
                 return Err(NotNFTOwner);
             }
 
@@ -278,7 +289,9 @@ mod market {
                 price,
             });
         }
+    }
 
+    impl NFTMarket {
         /// Transfer NFT
         fn transfer_nft(&self, buyer: AccountId, collection_id: CollectionId, token_id: TokenId, seller: AccountId) -> Result<(), Error> {
             if let Ok(Ok(())) = build_call::<DefaultEnvironment>()
@@ -294,6 +307,7 @@ mod market {
                 .fire() {
                 return Ok(());
             }
+            self.send_error_event(Error::InvokeNFTTransferFailed, "Call contract NFT failed. ".to_string());
             Err(Error::InvokeNFTTransferFailed)
         }
 
@@ -311,6 +325,7 @@ mod market {
                 .fire() {
                 return Ok(());
             }
+            self.send_error_event(Error::InvokeFTTransferFailed, "Call contract FT failed. ".to_string());
             Err(Error::InvokeFTTransferFailed)
         }
 
@@ -356,6 +371,13 @@ mod market {
 
             // Remove an ask (from asks)
             let _ = self.asks.take(&ask_id);
+        }
+        #[inline]
+        fn send_error_event(&self, err: Error, msg: String) {
+            self.env().emit_event(ErrorEvent {
+                err,
+                msg,
+            });
         }
     }
 

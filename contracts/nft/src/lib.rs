@@ -249,7 +249,8 @@ pub mod nft {
             }
 
             let token_info = self.token_collection.get(&(collection_id, id)).unwrap();
-            if token_info.owner() != caller {
+            let token_owner = token_info.owner();
+            if token_owner != caller {
                 self.send_error_event(Error::NotOwner, "Caller is not the owner for token. ".to_string());
                 return Err(Error::NotOwner);
             }
@@ -259,6 +260,8 @@ pub mod nft {
                 token_collection,
                 ..
             } = self;
+
+            self.owned_tokens.get_mut(&token_owner).unwrap().pop();
 
             decrease_counter_of(owned_tokens_count, &caller)?;
             token_collection.take(&(collection_id, id));
@@ -370,44 +373,46 @@ pub mod nft {
                 }
             };
 
-            // Get the last token info inorder to swap.
-            let (last_token_collection_id, last_token_id) = match self.owned_tokens.entry(from) {
-                Entry::Occupied(o) => {
-                    if o.get().len() < last_token_index as usize {
+            if last_token_index != token_index {
+                // Get the last token info inorder to swap.
+                let (last_token_collection_id, last_token_id) = match self.owned_tokens.entry(from) {
+                    Entry::Occupied(o) => {
+                        if o.get().len() < last_token_index as usize {
+                            self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                            return Err(Error::TokenNotFound);
+                        }
+                        o.get()[last_token_index as usize]
+                    }
+                    Entry::Vacant(_) => {
                         self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                         return Err(Error::TokenNotFound);
                     }
-                    o.get()[last_token_index as usize]
-                }
-                Entry::Vacant(_) => {
-                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                    return Err(Error::TokenNotFound);
-                }
-            };
+                };
 
-            let last_token_info = match self.token_collection.get_mut(&(last_token_collection_id, last_token_id)) {
-                Some(info) => info,
-                None => {
-                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                    return Err(Error::TokenNotFound);
-                }
-            };
-
-            last_token_info.set_owned_index(token_index);
-
-            match self.owned_tokens.entry(from) {
-                Entry::Occupied(mut o) => {
-                    if o.get().len() < last_token_index as usize {
+                let last_token_info = match self.token_collection.get_mut(&(last_token_collection_id, last_token_id)) {
+                    Some(info) => info,
+                    None => {
                         self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                         return Err(Error::TokenNotFound);
                     }
-                    o.get_mut()[token_index as usize] = (last_token_collection_id, last_token_id);
-                }
-                _ => {
-                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                    return Err(Error::TokenNotFound);
-                }
-            };
+                };
+
+                last_token_info.set_owned_index(token_index);
+
+                match self.owned_tokens.entry(from) {
+                    Entry::Occupied(mut o) => {
+                        if o.get().len() < last_token_index as usize {
+                            self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                            return Err(Error::TokenNotFound);
+                        }
+                        o.get_mut()[token_index as usize] = (last_token_collection_id, last_token_id);
+                    }
+                    _ => {
+                        self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                        return Err(Error::TokenNotFound);
+                    }
+                };
+            }
 
             Ok(())
         }

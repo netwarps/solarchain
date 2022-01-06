@@ -23,7 +23,7 @@ mod tests {
     #[ink::test]
     fn mint_and_check_owner() {
         let account_a = AccountId::from([1u8; 32]);
-        let account_b = AccountId::from([2u8; 32]);
+        // let account_b = AccountId::from([2u8; 32]);
         let mut e = new();
         let _ = e.mint(account_a, 1, 123, None);
         let _ = e.mint(account_a, 1, 223, None);
@@ -57,7 +57,7 @@ mod tests {
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 323)]);
         set_sender(account_b);
         let r = e.transfer_from(account_b, account_a, 1, 223);
-        println!("{:?}", r);
+        assert!(r.is_ok());
         assert_eq!(e.owner_of(1, 223), Some(account_a));
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 323), (1, 223)]);
     }

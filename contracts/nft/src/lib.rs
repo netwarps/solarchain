@@ -10,11 +10,13 @@ use ink_lang as ink;
 #[ink::contract]
 pub mod nft {
     // #[cfg(not(feature = "ink-as-dependency"))]
-    use ink_storage::collections::{
-        hashmap::Entry,
-        HashMap as StorageHashMap,
+
+    use ink_storage::{
+        collections::{hashmap::Entry, HashMap as StorageHashMap},
+        lazy::Lazy,
+        Vec as StorageVec,
+        alloc::Box,
     };
-    use ink_storage::lazy::Lazy;
     use ink_prelude::{
         string::{String, ToString},
         vec::Vec,
@@ -40,7 +42,7 @@ pub mod nft {
         /// Mapping from owner to number of owned token.
         owned_tokens_count: StorageHashMap<AccountId, u64>,
         /// Mapping from owner to list of owned token IDs
-        owned_tokens: StorageHashMap<AccountId, Vec<(CollectionId, TokenId)>>,
+        owned_tokens: StorageHashMap<AccountId, Box<StorageVec<(CollectionId, TokenId)>>>,
         /// Mapping from token_id to token info, such as owner, approval, etc.
         token_collection: StorageHashMap<(CollectionId, TokenId), TokenInfo>,
     }
@@ -261,7 +263,7 @@ pub mod nft {
                 ..
             } = self;
 
-            self.owned_tokens.get_mut(&token_owner).unwrap().pop();
+            let _ = Box::get_mut(self.owned_tokens.get_mut(&token_owner).unwrap()).pop();
 
             decrease_counter_of(owned_tokens_count, &caller)?;
             token_collection.take(&(collection_id, id));
@@ -276,7 +278,18 @@ pub mod nft {
 
         #[ink(message)]
         pub fn all_token_by_account(&self, account: AccountId) -> Option<Vec<(CollectionId, TokenId)>> {
-            self.owned_tokens.get(&account).cloned()
+            match self.owned_tokens.get(&account) {
+                Some(box_vec) => {
+                    let mut r_vec = Vec::new();
+                    let vec = Box::get(box_vec);
+                    for (cid, tid) in vec.iter() {
+                        r_vec.push((cid.clone(), tid.clone()))
+                    }
+                    return Some(r_vec);
+                }
+                _ => {}
+            }
+            None
         }
 
 
@@ -345,12 +358,13 @@ pub mod nft {
 
             match self.owned_tokens.entry(to) {
                 Entry::Occupied(mut o) => {
-                    o.get_mut().push((collection_id, token_id));
+                    let box_vec = Box::get_mut(o.get_mut());
+                    box_vec.push((collection_id, token_id));
                 }
                 Entry::Vacant(v) => {
-                    let mut token_vector = Vec::new();
+                    let mut token_vector = StorageVec::new();
                     token_vector.push((collection_id, token_id));
-                    v.insert(token_vector);
+                    v.insert(Box::new(token_vector));
                 }
             }
             let token_info = self.token_collection.get_mut(&(collection_id, token_id)).unwrap();
@@ -377,11 +391,12 @@ pub mod nft {
                 // Get the last token info inorder to swap.
                 let (last_token_collection_id, last_token_id) = match self.owned_tokens.entry(from) {
                     Entry::Occupied(o) => {
-                        if o.get().len() < last_token_index as usize {
+                        if Box::get(o.get()).len() < last_token_index as u32 {
                             self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                             return Err(Error::TokenNotFound);
                         }
-                        o.get()[last_token_index as usize]
+                        let box_vec = Box::get(o.get());
+                        box_vec[last_token_index as u32].clone()
                     }
                     Entry::Vacant(_) => {
                         self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
@@ -401,11 +416,12 @@ pub mod nft {
 
                 match self.owned_tokens.entry(from) {
                     Entry::Occupied(mut o) => {
-                        if o.get().len() < last_token_index as usize {
+                        if Box::get(o.get()).len() < last_token_index as u32 {
                             self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
                             return Err(Error::TokenNotFound);
                         }
-                        o.get_mut()[token_index as usize] = (last_token_collection_id, last_token_id);
+                        let box_vec = Box::get_mut(o.get_mut());
+                        box_vec[token_index as u32] = (last_token_collection_id, last_token_id);
                     }
                     _ => {
                         self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
@@ -484,7 +500,7 @@ pub mod nft {
             let token_info = token_collection.get_mut(&(collection_id, id)).unwrap();
             token_info.set_owner(AccountId::default());
             decrease_counter_of(owned_tokens_count, from)?;
-            let v = self.owned_tokens.get_mut(from).unwrap();
+            let v = Box::get_mut(self.owned_tokens.get_mut(from).unwrap());
             v.pop();
             Ok(())
         }

@@ -3,7 +3,7 @@ use ink_storage::traits::{PackedLayout, SpreadLayout};
 use scale::{Encode, Decode};
 use ink_prelude::string::String;
 
-#[derive(PackedLayout, Encode, Decode, SpreadLayout, Debug, Default)]
+#[derive(PackedLayout, Encode, Decode, SpreadLayout, Debug, Default, Clone)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
 pub struct TokenInfo {
     owner: AccountId,

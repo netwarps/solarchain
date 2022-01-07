@@ -37,6 +37,8 @@ pub mod nft {
     #[ink(storage)]
     #[derive(Default)]
     pub struct NFT {
+        /// Contract owner.
+        owner: AccountId,
         /// Symbols of ERC20 Token, by (name, symbol)
         symbols: Lazy<(String, String)>,
         /// Mapping from owner to number of owned token.
@@ -139,6 +141,7 @@ pub mod nft {
         #[ink(constructor)]
         pub fn new(name: String, symbols: String) -> Self {
             Self {
+                owner: Self::env().caller(),
                 symbols: Lazy::new((name, symbols)),
                 owned_tokens_count: Default::default(),
                 owned_tokens: Default::default(),
@@ -230,6 +233,12 @@ pub mod nft {
         /// Creates a new token.
         #[ink(message)]
         pub fn mint(&mut self, to: AccountId, collection_id: CollectionId, id: TokenId, metadata: Option<String>) -> Result<(), Error> {
+            let caller = self.env().caller();
+            if caller != self.owner {
+                self.send_error_event(Error::NotOwner, "Only admin can mint NFT. ".to_string());
+                return Err(Error::NotOwner);
+            }
+
             let _ = self.before_transfer(None, Some(to), collection_id, id)?;
             self.add_token_to(&to, collection_id, id, metadata)?;
             self.env().emit_event(Minted {
@@ -292,6 +301,15 @@ pub mod nft {
             None
         }
 
+        #[ink(message)]
+        pub fn get_token_info(&self, collection_id: CollectionId, token_id: TokenId) -> Option<TokenInfo> {
+            if !self.exists(collection_id, token_id){
+                self.send_error_event(Error::TokenNotFound, "Token is not found. ".to_string());
+                return None;
+            }
+
+            self.token_collection.get(&(collection_id, token_id)).cloned()
+        }
 
         pub fn set_token_url(&mut self, collection_id: CollectionId, token_id: TokenId, metadata: String) -> Result<(), Error> {
             let caller = self.env().caller();

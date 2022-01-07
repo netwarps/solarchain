@@ -4,6 +4,7 @@ mod tests {
     use ink_env::{AccountId, test, call, DefaultEnvironment};
     use ink_lang as ink;
     use crate::nft::NFT;
+    use crate::nft::Error;
 
     fn set_sender(sender: AccountId) {
         let callee = ink_env::account_id::<ink_env::DefaultEnvironment>().unwrap();
@@ -82,6 +83,9 @@ mod tests {
         set_sender(account_b);
         let r = e.burn(1, 223);
         assert!(r.is_ok());
+
+        let r = e.mint(account_a, 1,333, None);
+        assert_eq!(r, Err(Error::NotOwner));
 
         let r2 = e.owner_of(1, 223);
         assert!(r2.is_none());

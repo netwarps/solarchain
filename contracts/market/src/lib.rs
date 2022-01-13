@@ -224,16 +224,13 @@ mod market {
             self.last_ask_id
         }
 
-        /// Get ask by ID
-        #[ink(message)]
-        pub fn get_ask_by_id(&self, ask_id: u128) -> (u64, u64, Balance, AccountId) {
-            *self.asks.get(&ask_id).unwrap()
-        }
-
         /// Get ask by token
         #[ink(message)]
-        pub fn get_ask_id_by_token(&self, collection_id: CollectionId, token_id: TokenId) -> u128 {
-            *self.asks_by_token.get(&(collection_id, token_id)).unwrap()
+        pub fn get_ask_by_token_id(&self, collection_id: CollectionId, token_id: TokenId) -> Option<(u64, u64, Balance, AccountId)> {
+            if let Some(ask_id) = self.asks_by_token.get(&(collection_id, token_id)) {
+                return self.asks.get(ask_id).cloned();
+            }
+            None
         }
 
         /// Cancel an ask

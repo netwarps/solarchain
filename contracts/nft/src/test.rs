@@ -40,7 +40,9 @@ mod tests {
         let _ = e.mint(account_a, 1, 123, None);
         let _ = e.mint(account_a, 1, 223, None);
         let _ = e.mint(account_a, 1, 323, None);
+        assert_eq!(e.balance_of(account_a), 3);
         let _ = e.transfer_from(account_a, account_b, 1, 323);
+        assert_eq!(e.balance_of(account_a), 2);
         assert_eq!(e.owner_of(1, 323), Some(account_b));
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 223)])
     }
@@ -54,10 +56,12 @@ mod tests {
         let _ = e.mint(account_a, 1, 223, None);
         let _ = e.mint(account_a, 1, 323, None);
         let _ = e.transfer_from(account_a, account_b, 1, 223);
+        assert_eq!(e.balance_of(account_a), 2);
         assert_eq!(e.owner_of(1, 223), Some(account_b));
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 323)]);
         set_sender(account_b);
         let r = e.transfer_from(account_b, account_a, 1, 223);
+        assert_eq!(e.balance_of(account_a), 3);
         assert!(r.is_ok());
         assert_eq!(e.owner_of(1, 223), Some(account_a));
         assert_eq!(e.all_token_by_account(account_a).unwrap(), vec![(1, 123), (1, 323), (1, 223)]);
@@ -78,6 +82,7 @@ mod tests {
         assert!(transfer.is_ok());
         let r1 = e.owner_of(1, 223);
         assert_eq!(r1, Some(account_b));
+        assert_eq!(e.balance_of(account_a), 2);
 
         // Account_b burns
         set_sender(account_b);
@@ -96,6 +101,10 @@ mod tests {
         set_sender(account_a);
         let r3 = e.burn(1, 123);
         assert!(r3.is_ok());
+
+        assert_eq!(e.balance_of(account_a), 1);
+
+        assert_eq!(e.balance_of(account_b), 0);
 
         assert_eq!(e.all_token_by_account(account_a), Some(vec![(1, 323)]));
     }

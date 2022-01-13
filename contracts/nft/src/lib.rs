@@ -390,61 +390,37 @@ pub mod nft {
         }
 
         #[inline]
+        // Only two conditions can execute this methods: burn and transfer_from. And burn can be
+        // seen as a special transfer operation.
+        // This method uses some `unwrap()`, we will try to explain them.
+        // Target token must exist, so 2 will not trigger panic.
+        // From account has at least two tokens, 4 can use unwrap().
+        // If last_token_index != token_index, 5 can use unwrap() to get last_token_info.
         fn remove_token_from_owner(&mut self, from: AccountId, collection_id: CollectionId, token_id: TokenId) -> Result<(), Error> {
-            let last_token_index = if self.balance_of(from) == 0 {
-                0
-            } else {
-                self.balance_of(from) - 1
-            };
-
-            let token_index = match self.token_collection.entry((collection_id, token_id)) {
-                Entry::Occupied(o) => { o.get().owned_index() }
-                Entry::Vacant(_) => {
-                    self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                    return Err(Error::TokenNotFound);
-                }
-            };
-
+            // 1. Get the last token index.
+            let last_token_index = self.balance_of(from) - 1;
+            // 2. Get the target token index.
+            let token_index = self.token_collection.get(&(collection_id, token_id)).unwrap().owned_index();
+            // 3. If target is not equals last.
             if last_token_index != token_index {
-                // Get the last token info inorder to swap.
-                let (last_token_collection_id, last_token_id) = match self.owned_tokens.entry(from) {
-                    Entry::Occupied(o) => {
-                        if Box::get(o.get()).len() < last_token_index as u32 {
-                            self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                            return Err(Error::TokenNotFound);
-                        }
-                        let box_vec = Box::get(o.get());
-                        box_vec[last_token_index as u32].clone()
-                    }
-                    Entry::Vacant(_) => {
-                        self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                        return Err(Error::TokenNotFound);
-                    }
-                };
-
-                let last_token_info = match self.token_collection.get_mut(&(last_token_collection_id, last_token_id)) {
-                    Some(info) => info,
-                    None => {
-                        self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                        return Err(Error::TokenNotFound);
-                    }
-                };
-
+                // 4. Get last token id.
+                let from_owned_tokens = self.owned_tokens.get(&from).unwrap();
+                let (last_token_collection_id, last_token_id) = Box::get(from_owned_tokens)[last_token_index as u32].clone();
+                // 5. Get last token info by id.
+                let last_token_info = self.token_collection.get_mut(&(last_token_collection_id, last_token_id)).unwrap();
+                // 6. Reset last token's index to target token index.
                 last_token_info.set_owned_index(token_index);
-
+                // 7. Move last token to target token's position in owned_token.
                 match self.owned_tokens.entry(from) {
                     Entry::Occupied(mut o) => {
-                        if Box::get(o.get()).len() < last_token_index as u32 {
-                            self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                            return Err(Error::TokenNotFound);
-                        }
+                        // if Box::get(o.get()).len() < last_token_index as u32 {
+                        //     self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                        //     return Err(Error::TokenNotFound);
+                        // }
                         let box_vec = Box::get_mut(o.get_mut());
                         box_vec[token_index as u32] = (last_token_collection_id, last_token_id);
                     }
-                    _ => {
-                        self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                        return Err(Error::TokenNotFound);
-                    }
+                    _ => unreachable!()
                 };
             }
 

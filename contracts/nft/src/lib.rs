@@ -233,6 +233,10 @@ pub mod nft {
         /// Creates a new token.
         #[ink(message)]
         pub fn mint(&mut self, to: AccountId, collection_id: CollectionId, id: TokenId, metadata: Option<String>) -> Result<(), Error> {
+            if self.exists(collection_id, id) {
+                self.send_error_event(Error::TokenExists, "Token is exists. ".to_string());
+                return Err(Error::TokenExists);
+            };
             let caller = self.env().caller();
             if caller != self.owner {
                 self.send_error_event(Error::NotOwner, "Only admin can mint NFT. ".to_string());
@@ -438,6 +442,11 @@ pub mod nft {
         ) -> Result<(), Error> {
             let caller = self.env().caller();
 
+            if !self.exists(collection_id, id) {
+                self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
+                return Err(Error::TokenNotFound);
+            };
+
             if !self.approved_or_owner(Some(caller), collection_id, id) {
                 self.send_error_event(Error::NotApproved, "Caller is not the owner or approval for token. ".to_string());
                 return Err(Error::NotApproved);
@@ -446,11 +455,6 @@ pub mod nft {
             if *to == AccountId::from([0x0; 32]) {
                 self.send_error_event(Error::NotAllowed, "Transfer token to zero address is not allowed. ".to_string());
                 return Err(Error::NotAllowed);
-            };
-
-            if !self.exists(collection_id, id) {
-                self.send_error_event(Error::TokenNotFound, "Token is not exists. ".to_string());
-                return Err(Error::TokenNotFound);
             };
 
             if from == to {

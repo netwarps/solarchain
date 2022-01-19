@@ -41,12 +41,19 @@ cargo build --release
 ```
 ./target/release/solar-node --help
 ```
-### 官方镜像
-官方docker镜像: https://registry.paradeum.com/harbor/projects/45/repositories/netwarps%2Fsolarchain 
+### 镜像构建
+1. 修改node/Cargo.toml版本信息
+2. 执行脚本构建docker镜像
+```
+./scripts/dockerfiles/build.sh
+```
+3. 推送到镜像仓库
 
-目前最新版本为:registry.paradeum.com/netwarps/solarchain:v0.1.4  
+docker镜像地址: `https://registry.paradeum.com/harbor/projects/45/repositories/netwarps%2Fsolarchain `
 
-### 启动单个dev node
+目前最新版本为:`registry.paradeum.com/netwarps/solarchain:v0.1.4`
+
+### 启动单个开发节点
 清除现有的开发链状态
 ```
 ./target/release/solar-node  purge-chain --dev
@@ -63,7 +70,7 @@ RUST_LOG=debug RUST_BACKTRACE=1  ./target/release/solar-node --dev
 ```
 http://polkadot.js.paradeum.com/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer
 ```
-### 启动单个dev node(docker)
+### 启动单个节点(docker)
 
 ```
 docker run --name solar-dev-node  \
@@ -80,7 +87,7 @@ registry.paradeum.com/netwarps/solarchain:v0.1.4 \
 --dev
 ```
 
-### 多个节点local test network
+### 启动多个节点local test network
 首先启动 Alice 的节点。以下命令使用默认 TCP 端口 (30333) 并指定 /tmp/alice为链数据库位置。Alice 的节点 ID 是 12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp( 由node-key决定）
 ```
 ./target/release/solar-node  \
@@ -155,7 +162,7 @@ registry.paradeum.com/netwarps/solarchain:v0.1.4 \
 2022-01-17 16:06:02 💤 Idle (1 peers), best: #2 (0x416f…14de), finalized #0 (0x20d3…e3bd), ⬇ 0.7kiB/s ⬆ 0.6kiB/s    
 ```
 
-### 多个节点local test network(docker-compose)
+### 启动多个节点local test network(docker-compose)
 ```
 docker-compose  -f scripts/dockerfiles/docker-compose-local.yml up 
 ```

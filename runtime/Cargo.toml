@@ -1,6 +1,6 @@
 [package]
 name = "solar-node-runtime"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["netwarps Technologies <admin@netwarps.com>"]
 edition = "2018"
 license = "Unlicense"
@@ -59,6 +59,7 @@ pallet-contracts-rpc-runtime-api = { git = "https://github.com/paritytech/substr
 # scheduler
 pallet-scheduler = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "pallet-scheduler",default-features = false }
 
+pallet-node-authorization= { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1', package = "pallet-node-authorization",default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder =  { git = "https://github.com/paritytech/substrate",version = "5.0.0-dev", package = "substrate-wasm-builder" }
@@ -100,6 +101,7 @@ std = [
 	"pallet-contracts-primitives/std",
 	"pallet-contracts-rpc-runtime-api/std",
 	"pallet-scheduler/std",
+	"pallet-node-authorization/std",
 ]
 
 runtime-benchmarks = [

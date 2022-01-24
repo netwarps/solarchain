@@ -1,13 +1,15 @@
 use sc_service::ChainType;
 use solar_node_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	SystemConfig, WASM_BINARY,NodeAuthorizationConfig,
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
-
+use sp_core::OpaquePeerId; // A struct wraps Vec<u8>, represents as our `PeerId`.
+use sp_core::crypto::AccountId32;
+use std::str::FromStr;
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
@@ -161,5 +163,25 @@ fn testnet_genesis(
 		transaction_payment: Default::default(),
 		scheduler: Default::default(),
 		nft: Default::default(),
+		node_authorization: NodeAuthorizationConfig {
+            nodes: vec![
+                (
+                    OpaquePeerId(bs58::decode("12D3KooWCySiYrhevMhVKXGZYEcUUViyti6wRSjXgnmN81D7g8ZY").into_vec().unwrap()),
+					AccountId32::from_str("5EWX1uk3P2wxLJSr5ZT3jSEPAPse67guqV5ASjU4yL89LN18").unwrap(),
+                ),
+                (
+                    OpaquePeerId(bs58::decode("12D3KooWKHai5by8FAf5QmJMo53n1AfQzvtMvDwhzKtx4LRPL8Yn").into_vec().unwrap()),
+					AccountId32::from_str("5GHbL5YWjsaLL24PRAiX2YK8b3vcoqvStnMvRR75YrD5jTty").unwrap(),
+                ),
+				(
+                    OpaquePeerId(bs58::decode("12D3KooWGHPNxMp3YwZYvDV7grbKsrCgKFEUSYjzjRRoKQ2JBT8S").into_vec().unwrap()),
+					AccountId32::from_str("5CDHFYGAaiK81vwaELU95fvDW8DYJkAkEqF5SVFwPzGjnSay").unwrap(),
+                ),
+				(
+                    OpaquePeerId(bs58::decode("12D3KooWEU1k7baQEXDiXrxmmmq4Rj7kG7WKPZRm4Ru3hi11StN6").into_vec().unwrap()),
+					AccountId32::from_str("5G6KbEQTnQ5agwCWBqkij277wrAACJA37RJ157bUB842rExp").unwrap(),
+                ),
+            ],
+        },
 	}
 }

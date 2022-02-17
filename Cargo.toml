@@ -6,7 +6,10 @@ members = [
     'pallets/interlaken',
     'contracts/market',
     'contracts/nft',
-    'contracts/ft'
+]
+exclude = [
+    'contracts/SolarFT',
+    'contracts/SolarNFTMarket',
 ]
 [profile.release]
 panic = 'unwind'

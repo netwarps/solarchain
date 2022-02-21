@@ -46,6 +46,12 @@ mod solar_nft_market {
     }
 
     #[ink(event)]
+    pub struct Burned{
+        from: AccountId,
+        token_id: TokenID
+    }
+
+    #[ink(event)]
     pub struct Approval {
         owner: AccountId,
         approval: Option<AccountId>,
@@ -75,14 +81,14 @@ mod solar_nft_market {
     }
 
     #[ink(event)]
-    pub struct MintItem {
+    pub struct Minted {
         to: AccountId,
         token_id: TokenID,
         token_uri: String,
     }
 
     #[ink(event)]
-    pub struct Trade {
+    pub struct Traded {
         buyer: AccountId,
         seller: AccountId,
         token: TokenID,
@@ -108,7 +114,7 @@ mod solar_nft_market {
                 minter: Default::default(),
                 organiser,
                 mint_tax_commission_rate,
-                global_token_id: 0,
+                global_token_id: 1,
                 trade_commission: 20,
             }
         }
@@ -148,7 +154,7 @@ mod solar_nft_market {
 
             self.transfer_inner(buyer, token_id);
 
-            self.env().emit_event(Trade {
+            self.env().emit_event(Traded {
                 buyer,
                 seller: owner,
                 token: token_id,
@@ -255,9 +261,8 @@ mod solar_nft_market {
             token.set_approval(None);
             token.set_owner(AccountId::from([0u8; 32]));
 
-            self.env().emit_event(Transfer {
+            self.env().emit_event(Burned {
                 from: owner,
-                to: AccountId::from([0u8; 32]),
                 token_id,
             })
         }
@@ -279,14 +284,14 @@ mod solar_nft_market {
             let token_id = self.global_token_id;
             self.token.insert(token_id, token);
 
-            self.env().emit_event(Transfer {
-                from: AccountId::from([0u8; 32]),
-                to,
-                token_id,
-            });
+            // self.env().emit_event(Transfer {
+            //     from: AccountId::from([0u8; 32]),
+            //     to,
+            //     token_id,
+            // });
 
             self.global_token_id += 1;
-            self.env().emit_event(MintItem {
+            self.env().emit_event(Minted {
                 to,
                 token_id,
                 token_uri,

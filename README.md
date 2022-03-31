@@ -2,7 +2,6 @@
 
 Solarchain netwrok基于Polkadot Substrate，旨在为为企业和个人创作者提供NFT化其IP和艺术品的一站式解决方案。  
 Solarchain的runtime核心组件包括：
-- pallet-contracts
 - frame_system
 - pallet_randomness_collective_flip
 - pallet_timestamp

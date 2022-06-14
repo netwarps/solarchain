@@ -2,12 +2,10 @@
 members = [
     'node',
     'runtime',
-    'pallets/nft',
-    'pallets/interlaken',
-    'contracts/market',
-    'contracts/nft',
 ]
 exclude = [
+    'contracts/market',
+    'contracts/nft',
     'contracts/SolarFT',
     'contracts/SolarNFTMarket',
     'contracts/kuggamax'

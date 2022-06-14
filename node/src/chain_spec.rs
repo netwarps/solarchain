@@ -1,12 +1,14 @@
 use sc_service::ChainType;
 use solar_node_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, NodeAuthorizationConfig,
+	Signature, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{sr25519, Pair, Public};
+use sp_core::OpaquePeerId; // A struct wraps Vec<u8>, represents as our `PeerId`.
+use sp_core::{crypto::AccountId32, sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use std::str::FromStr; // The genesis config that serves for our pallet.
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -76,6 +78,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		None,
 		// Protocol ID
 		Some("rpc"),
+		// Fork ID
+		None,
 		// Properties
 		None,
 		// Extensions
@@ -123,6 +127,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		None,
 		// Protocol ID
 		Some("rpc"),
+		// Fork ID
+		None,
 		// Properties
 		None,
 		// Extensions
@@ -142,10 +148,8 @@ fn testnet_genesis(
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
 		aura: AuraConfig {
@@ -154,12 +158,47 @@ fn testnet_genesis(
 		grandpa: GrandpaConfig {
 			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
 		},
-		sudo: SudoConfig {
-			// Assign network admin rights.
-			key: root_key,
-		},
+		sudo: SudoConfig { key: Some(root_key) },
 		transaction_payment: Default::default(),
-		scheduler: Default::default(),
-		nft: Default::default(),
+		node_authorization: NodeAuthorizationConfig {
+			nodes: vec![
+				(
+					OpaquePeerId(
+						bs58::decode("12D3KooWCySiYrhevMhVKXGZYEcUUViyti6wRSjXgnmN81D7g8ZY")
+							.into_vec()
+							.unwrap(),
+					),
+					AccountId32::from_str("5EWX1uk3P2wxLJSr5ZT3jSEPAPse67guqV5ASjU4yL89LN18")
+						.unwrap(),
+				),
+				(
+					OpaquePeerId(
+						bs58::decode("12D3KooWKHai5by8FAf5QmJMo53n1AfQzvtMvDwhzKtx4LRPL8Yn")
+							.into_vec()
+							.unwrap(),
+					),
+					AccountId32::from_str("5GHbL5YWjsaLL24PRAiX2YK8b3vcoqvStnMvRR75YrD5jTty")
+						.unwrap(),
+				),
+				(
+					OpaquePeerId(
+						bs58::decode("12D3KooWGHPNxMp3YwZYvDV7grbKsrCgKFEUSYjzjRRoKQ2JBT8S")
+							.into_vec()
+							.unwrap(),
+					),
+					AccountId32::from_str("5CDHFYGAaiK81vwaELU95fvDW8DYJkAkEqF5SVFwPzGjnSay")
+						.unwrap(),
+				),
+				(
+					OpaquePeerId(
+						bs58::decode("12D3KooWEU1k7baQEXDiXrxmmmq4Rj7kG7WKPZRm4Ru3hi11StN6")
+							.into_vec()
+							.unwrap(),
+					),
+					AccountId32::from_str("5G6KbEQTnQ5agwCWBqkij277wrAACJA37RJ157bUB842rExp")
+						.unwrap(),
+				),
+			],
+		},
 	}
 }

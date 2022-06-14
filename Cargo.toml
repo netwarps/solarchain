@@ -4,11 +4,11 @@ members = [
     'runtime',
 ]
 exclude = [
-    'contracts/market',
-    'contracts/nft',
-    'contracts/SolarFT',
-    'contracts/SolarNFTMarket',
-    'contracts/kuggamax'
+    # 'contracts/market',
+    # 'contracts/nft',
+    # 'contracts/SolarFT',
+    # 'contracts/SolarNFTMarket',
+    # 'contracts/kuggamax'
 ]
 [profile.release]
 panic = 'unwind'

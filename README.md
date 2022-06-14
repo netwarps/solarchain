@@ -12,10 +12,11 @@ Solarchain的runtime核心组件包括：
 - pallet_sudo
 - pallet_contracts
 - pallet_scheduler
+- pallet-node-authorization 
 
 组件版本信息如下
 ```
-git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'monthly-2021-11-1'
+git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",tag = 'polkadot-v0.9.23'
 ```
 ## 入门
 
@@ -50,7 +51,7 @@ cargo build --release
 
 docker镜像地址: `https://registry.paradeum.com/harbor/projects/45/repositories/netwarps%2Fsolarchain `
 
-目前最新版本为:`registry.paradeum.com/netwarps/solarchain:v0.1.4`
+目前最新版本为:`registry.paradeum.com/netwarps/solarchain:v0.1.6`
 
 ### 启动单个开发节点
 清除现有的开发链状态

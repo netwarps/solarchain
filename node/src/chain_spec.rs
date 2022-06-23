@@ -1,14 +1,15 @@
 use sc_service::ChainType;
 use solar_node_runtime::{
-	AccountId, AuraConfig, BalancesConfig, EVMConfig, EthereumConfig, GenesisConfig, GrandpaConfig,
-	NodeAuthorizationConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, EVMConfig, EthereumConfig,
+	GenesisConfig, GrandpaConfig, NodeAuthorizationConfig, Signature, SudoConfig, SystemConfig,
+	WASM_BINARY,
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::AccountId32, sr25519, OpaquePeerId, Pair, Public, H160, U256}; /* A struct wraps Vec<u8>, represents as our `PeerId`. */
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::{collections::BTreeMap, str::FromStr}; /* The genesis config that serves for our
-                                                 * pallet. */
+												 * pallet. */
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -77,11 +78,16 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Telemetry
 		None,
 		// Protocol ID
-		Some("rpc"),
+		None,
 		// Fork ID
 		None,
 		// Properties
-		None,
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLAR\", \"SS58Prefix\": 42}",
+			)
+			.expect("Provided valid json map"),
+		),
 		// Extensions
 		None,
 	))
@@ -126,11 +132,16 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Telemetry
 		None,
 		// Protocol ID
-		Some("rpc"),
+		None,
 		// Fork ID
 		None,
 		// Properties
-		None,
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLAR\", \"SS58Prefix\": 42}",
+			)
+			.expect("Provided valid json map"),
+		),
 		// Extensions
 		None,
 	))

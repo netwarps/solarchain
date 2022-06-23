@@ -1,4 +1,3 @@
-
 #[allow(missing_docs)]
 #[derive(Debug, clap::Parser)]
 pub struct RunCmd {
@@ -6,7 +5,7 @@ pub struct RunCmd {
 	#[clap(flatten)]
 	pub base: sc_cli::RunCmd,
 
-	#[clap(long,value_parser)]
+	#[clap(long, value_parser)]
 	pub enable_dev_signer: bool,
 
 	/// Maximum number of logs in a query.

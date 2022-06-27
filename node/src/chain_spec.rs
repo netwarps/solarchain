@@ -1,6 +1,6 @@
 use sc_service::ChainType;
 use solar_node_runtime::{
-	AccountId, AuraConfig, BalancesConfig, EVMConfig, EthereumConfig,
+	currency::UNIT, AccountId, AuraConfig, BalancesConfig, EVMConfig, EthereumConfig,
 	GenesisConfig, GrandpaConfig, NodeAuthorizationConfig, Signature, SudoConfig, SystemConfig,
 	WASM_BINARY,
 };
@@ -8,8 +8,8 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::AccountId32, sr25519, OpaquePeerId, Pair, Public, H160, U256}; /* A struct wraps Vec<u8>, represents as our `PeerId`. */
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use std::{collections::BTreeMap, str::FromStr}; /* The genesis config that serves for our
-												 * pallet. */
+use std::{collections::BTreeMap, str::FromStr};
+/* The genesis config that serves for our pallet. */
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -161,7 +161,7 @@ fn testnet_genesis(
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 10000 * UNIT)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
@@ -236,8 +236,7 @@ fn testnet_genesis(
 					H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b")
 						.expect("internal H160 is valid; qed"),
 					fp_evm::GenesisAccount {
-						balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
-							.expect("internal U256 is valid; qed"),
+						balance: (100000 as u128 * 10_u128.pow(18)).into(),
 						code: Default::default(),
 						nonce: Default::default(),
 						storage: Default::default(),

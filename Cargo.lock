@@ -7074,6 +7074,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
+ "smallvec",
  "sp-api",
  "sp-block-builder",
  "sp-consensus-aura",

@@ -84,7 +84,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Properties
 		Some(
 			serde_json::from_str(
-				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLAR\", \"SS58Prefix\": 42}",
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLA\", \"SS58Prefix\": 42}",
 			)
 			.expect("Provided valid json map"),
 		),
@@ -138,7 +138,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Properties
 		Some(
 			serde_json::from_str(
-				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLAR\", \"SS58Prefix\": 42}",
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLA\", \"SS58Prefix\": 42}",
 			)
 			.expect("Provided valid json map"),
 		),
@@ -155,13 +155,15 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
+	//let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+
 	GenesisConfig {
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 10000 * UNIT)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 1000000000000000000 * UNIT)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
@@ -215,23 +217,6 @@ fn testnet_genesis(
 			accounts: {
 				let mut map = BTreeMap::new();
 				map.insert(
-					// H160 address of Alice dev account
-					// Derived from SS58 (42 prefix) address
-					// SS58: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
-					// hex: 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d
-					// Using the full hex key, truncating to the first 20 bytes (the first 40 hex
-					// chars)
-					H160::from_str("d43593c715fdd31c61141abd04a99fd6822c8558")
-						.expect("internal H160 is valid; qed"),
-					fp_evm::GenesisAccount {
-						balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
-							.expect("internal U256 is valid; qed"),
-						code: Default::default(),
-						nonce: Default::default(),
-						storage: Default::default(),
-					},
-				);
-				map.insert(
 					// H160 address of CI test runner account
 					H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b")
 						.expect("internal H160 is valid; qed"),
@@ -248,6 +233,10 @@ fn testnet_genesis(
 		},
 		ethereum: EthereumConfig {},
 		dynamic_fee: Default::default(),
-		base_fee: Default::default(),
+		base_fee: BaseFeeConfig::new(
+			U256::from(1_000_000_000u64),
+			false,
+			Permill::from_parts(125_000),
+		),
 	}
 }

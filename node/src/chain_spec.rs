@@ -2,13 +2,14 @@ use sc_service::ChainType;
 use solar_node_runtime::{
 	currency::UNIT, AccountId, AuraConfig, BalancesConfig, EVMConfig, EthereumConfig,
 	GenesisConfig, GrandpaConfig, NodeAuthorizationConfig, Signature, SudoConfig, SystemConfig,
-	WASM_BINARY,
+	WASM_BINARY,Permill
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::AccountId32, sr25519, OpaquePeerId, Pair, Public, H160, U256}; /* A struct wraps Vec<u8>, represents as our `PeerId`. */
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::{collections::BTreeMap, str::FromStr};
+use solar_node_runtime::BaseFeeConfig;
 /* The genesis config that serves for our pallet. */
 
 // The URL for the telemetry server.

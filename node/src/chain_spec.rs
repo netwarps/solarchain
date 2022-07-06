@@ -164,7 +164,7 @@ fn testnet_genesis(
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1000000000000000000 * UNIT)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 100000000 * UNIT)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
@@ -178,38 +178,47 @@ fn testnet_genesis(
 			nodes: vec![
 				(
 					OpaquePeerId(
-						bs58::decode("12D3KooWCySiYrhevMhVKXGZYEcUUViyti6wRSjXgnmN81D7g8ZY")
+						bs58::decode("12D3KooWNv7yRKnUzXQGWhFRBhTh24v6LnB6CnZASApHPMn8YoCQ")
 							.into_vec()
 							.unwrap(),
 					),
-					AccountId32::from_str("5EWX1uk3P2wxLJSr5ZT3jSEPAPse67guqV5ASjU4yL89LN18")
+					AccountId32::from_str("5CyaJGqqD82o6ZQS96dEEWNVhH9t558JobxF1xtxNe37eUJK")
 						.unwrap(),
 				),
 				(
 					OpaquePeerId(
-						bs58::decode("12D3KooWKHai5by8FAf5QmJMo53n1AfQzvtMvDwhzKtx4LRPL8Yn")
+						bs58::decode("12D3KooWEQhdRc7Yk4x5p4vwgZmwv64qksfQTPxH6fzMCjhLQNMU")
 							.into_vec()
 							.unwrap(),
 					),
-					AccountId32::from_str("5GHbL5YWjsaLL24PRAiX2YK8b3vcoqvStnMvRR75YrD5jTty")
+					AccountId32::from_str("5E565XNkfB8vFEKHjqeeQcmcwXbUTBjEi29CvVwXsdMxCUqq")
 						.unwrap(),
 				),
 				(
 					OpaquePeerId(
-						bs58::decode("12D3KooWGHPNxMp3YwZYvDV7grbKsrCgKFEUSYjzjRRoKQ2JBT8S")
+						bs58::decode("12D3KooWHCqfSii1VynLWhN8LfBZvdZqgff97N1iuvQaTZB7dco9")
 							.into_vec()
 							.unwrap(),
 					),
-					AccountId32::from_str("5CDHFYGAaiK81vwaELU95fvDW8DYJkAkEqF5SVFwPzGjnSay")
+					AccountId32::from_str("5DAbCKqhhZuZXJ7TDnVdn7EMVqdYXvNeppMdLd4YPoFz4U1k")
 						.unwrap(),
 				),
 				(
 					OpaquePeerId(
-						bs58::decode("12D3KooWEU1k7baQEXDiXrxmmmq4Rj7kG7WKPZRm4Ru3hi11StN6")
+						bs58::decode("12D3KooWSVegbF3mHM13EFQ5WD8rr8YgUFLRtVoxy9inNiVWKtbJ")
 							.into_vec()
 							.unwrap(),
 					),
-					AccountId32::from_str("5G6KbEQTnQ5agwCWBqkij277wrAACJA37RJ157bUB842rExp")
+					AccountId32::from_str("5G3hw8pZFd4gAEssiHxjQBJ4hwefJdgJiDja7fegFeMF1BRw")
+						.unwrap(),
+				),
+				(
+					OpaquePeerId(
+						bs58::decode("12D3KooWJgdR2tkmk1XtitQ9xiSrtR7kDKzA9miCtKypWNkQvbjH")
+							.into_vec()
+							.unwrap(),
+					),
+					AccountId32::from_str("5FyBJGEKY3LHGDHXsqrY7ei7x8GBMXG6pLZoBm2eeQ9cPS4h")
 						.unwrap(),
 				),
 			],
@@ -218,12 +227,10 @@ fn testnet_genesis(
 			accounts: {
 				let mut map = BTreeMap::new();
 				map.insert(
-					// H160 address of CI test runner account
-					H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b")
+					H160::from_str("0xF833A151AA2623122625C65834Da5216fa28b927")
 						.expect("internal H160 is valid; qed"),
 					fp_evm::GenesisAccount {
-						balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
-							.expect("internal U256 is valid; qed"),
+						balance: (10000000 * UNIT).into(),
 						code: Default::default(),
 						nonce: Default::default(),
 						storage: Default::default(),

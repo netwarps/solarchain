@@ -81,7 +81,12 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Fork ID
 		None,
 		// Properties
-		None,
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLA\", \"SS58Prefix\": 42}",
+			)
+			.expect("Provided valid json map"),
+		),
 		// Extensions
 		None,
 	))
@@ -130,7 +135,12 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Fork ID
 		None,
 		// Properties
-		None,
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLA\", \"SS58Prefix\": 42}",
+			)
+			.expect("Provided valid json map"),
+		),
 		// Extensions
 		None,
 	))
@@ -150,7 +160,7 @@ fn testnet_genesis(
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 80)).collect(),
 		},
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),

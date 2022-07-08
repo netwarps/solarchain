@@ -19,6 +19,7 @@ path = "src/main.rs"
 [dependencies]
 bs58 = "0.4.0"
 clap = { version = "3.1.18", features = ["derive"] }
+serde_json = "1.0"
 
 sc-cli = { git = "https://github.com/paritytech/substrate",version = "0.10.0-dev",branch = "polkadot-v0.9.23",  package = "sc-cli", features = ["wasmtime"] }
 sp-core = { git = "https://github.com/paritytech/substrate",version = "6.0.0",branch = "polkadot-v0.9.23",  package = "sp-core" }

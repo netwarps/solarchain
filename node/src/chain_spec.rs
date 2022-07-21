@@ -6,11 +6,11 @@ use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
 use solar_node_runtime::{
 	currency, opaque::SessionKeys, wasm_binary_unwrap, AccountId, AuraConfig, BalancesConfig,
-	BaseFeeConfig, Block, Days, EVMConfig, ElectionsConfig,
-	EpochDurationInBlocks, EpochDurationInSlots, EthereumConfig, GenesisConfig, GrandpaConfig,
-	Hours, MillisecsPerBlock, Minutes, NodeAuthorizationConfig, NominationPoolsConfig, Permill,
-	SecsPerBlock, SessionConfig, Signature, SlotDuration, StakerStatus, StakingConfig, SudoConfig,
-	SystemConfig,CouncilConfig,TechnicalMembershipConfig, MILLISECS_PER_BLOCK,
+	BaseFeeConfig, Block, CouncilConfig, Days, EVMConfig, ElectionsConfig, EpochDurationInBlocks,
+	EpochDurationInSlots, EthereumConfig, GenesisConfig, GrandpaConfig, Hours, MillisecsPerBlock,
+	Minutes, NodeAuthorizationConfig, NominationPoolsConfig, Permill, SecsPerBlock, SessionConfig,
+	Signature, SlotDuration, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
+	TechnicalMembershipConfig, MILLISECS_PER_BLOCK,
 };
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -426,9 +426,7 @@ fn testnet_genesis(
 	const STASH: u128 = ENDOWMENT / 1000;
 
 	GenesisConfig {
-		system: SystemConfig {
-			code: wasm_binary_unwrap().to_vec(),
-		},
+		system: SystemConfig { code: wasm_binary_unwrap().to_vec() },
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
 		},
@@ -512,7 +510,7 @@ fn testnet_genesis(
 		vesting: Default::default(),
 		democracy: Default::default(),
 		council: CouncilConfig::default(),
-		tech_committee:Default::default() ,
+		tech_committee: Default::default(),
 		technical_membership: TechnicalMembershipConfig {
 			members: endowed_accounts
 				.iter()

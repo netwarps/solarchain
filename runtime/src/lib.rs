@@ -46,10 +46,7 @@ use pallet_evm::{
 
 // A few exports that help ease life for downstream crates.
 use fp_rpc::TransactionStatus;
-use frame_election_provider_support::{
-	onchain, SequentialPhragmen,
-	VoteWeight,
-};
+use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
@@ -988,7 +985,6 @@ impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
 	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
 }
 
-
 // type EnsureRootOrHalfCouncil = EnsureOneOf<
 // 	EnsureRoot<AccountId>,
 // 	pallet_collective::EnsureProportionMoreThan<AccountId, Council, 1, 2>,
@@ -1006,7 +1002,6 @@ impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
 	type MaxMembers = TechnicalMaxMembers;
 	type WeightInfo = pallet_membership::weights::SubstrateWeight<Runtime>;
 }
-
 
 parameter_types! {
 	pub const CandidacyBond: Balance = 10 * currency::SOLAR;

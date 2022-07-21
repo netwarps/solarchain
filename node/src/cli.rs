@@ -19,6 +19,10 @@ pub struct RunCmd {
 	/// The dynamic-fee pallet target gas price set by block author
 	#[clap(long, value_parser, default_value = "1")]
 	pub target_gas_price: u64,
+
+	/// Custom block duration in milliseconds (only useful with --dev)
+	#[clap(long)]
+	pub block_millisecs: Option<u64>,
 }
 
 #[derive(Debug, clap::Parser)]

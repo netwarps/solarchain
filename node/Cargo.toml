@@ -25,6 +25,9 @@ futures = "0.3"
 jsonrpsee = { version = "0.13.0", features = ["server", "macros"] }
 log = "0.4.8"
 serde_json = "1.0"
+serde = { version = "1.0.136", features = ["derive"] }
+hex-literal = "0.3.4"
+rand = "0.8"
 
 sc-cli = { git = "https://github.com/paritytech/substrate",version = "0.10.0-dev",branch = "polkadot-v0.9.22",  package = "sc-cli", features = ["wasmtime"] }
 sp-core = { git = "https://github.com/paritytech/substrate",version = "6.0.0",branch = "polkadot-v0.9.22",  package = "sp-core" }
@@ -77,6 +80,13 @@ fp-evm = { git = "https://github.com/paritytech/frontier", branch = 'polkadot-v0
 fp-rpc = { git = "https://github.com/paritytech/frontier", branch = 'polkadot-v0.9.22', default-features = false }
 fp-storage = { git = "https://github.com/paritytech/frontier", branch = 'polkadot-v0.9.22', default-features = false }
 
+sc-chain-spec = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+pallet-im-online= { git = "https://github.com/paritytech/substrate.git", version = "4.0.0-dev", branch = "polkadot-v0.9.22",  default-features = false }
+sp-authority-discovery={ git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",branch = "polkadot-v0.9.22", default-features = false }
+pallet-authority-discovery= { git = "https://github.com/paritytech/substrate.git", version = "4.0.0-dev", branch = "polkadot-v0.9.22",  default-features = false }
+sc-sync-state-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sc-sysinfo = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
+sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22" }
 
 solar-node-runtime = { path = "../runtime" }
 

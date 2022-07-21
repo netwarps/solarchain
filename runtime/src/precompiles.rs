@@ -2,10 +2,10 @@ use pallet_evm::{Precompile, PrecompileHandle, PrecompileResult, PrecompileSet};
 use sp_core::H160;
 use sp_std::marker::PhantomData;
 
+use pallet_evm::AddressMapping;
 use pallet_evm_precompile_modexp::Modexp;
 use pallet_evm_precompile_sha3fips::Sha3FIPS256;
 use pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256};
-use pallet_evm::AddressMapping;
 pub struct FrontierPrecompiles<R>(PhantomData<R>);
 
 impl<R> FrontierPrecompiles<R>
@@ -21,11 +21,9 @@ where
 	/// Return all addresses that contain precompiles. This can be used to populate dummy code
 	/// under the precompile.
 	pub fn used_addresses() -> impl Iterator<Item = R::AccountId> {
-		sp_std::vec![
-			1, 2, 3, 4, 5, 1024, 1025
-		]
-		.into_iter()
-		.map(|x| R::AddressMapping::into_account_id(hash(x)))
+		sp_std::vec![1, 2, 3, 4, 5, 1024, 1025]
+			.into_iter()
+			.map(|x| R::AddressMapping::into_account_id(hash(x)))
 	}
 }
 impl<R> PrecompileSet for FrontierPrecompiles<R>

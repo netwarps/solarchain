@@ -36,13 +36,36 @@ impl SubstrateCli for Cli {
 		2021
 	}
 
+	// fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+	// 	Ok(match id {
+	// 		"" | "dev" => Box::new(chain_spec::development_config()),
+	// 		"local" => Box::new(chain_spec::local_testnet_config()),
+	// 		path =>
+	// 			Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?),
+	// 	})
+	// }
+
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-		Ok(match id {
-			"" | "dev" => Box::new(chain_spec::development_config()?),
-			"local" => Box::new(chain_spec::local_testnet_config()?),
+		let spec = match id {
+			"" =>
+				return Err(
+					"Please specify which chain you want to run, e.g. --dev or --chain=local"
+						.into(),
+				),
+			"dev" => match self.run.block_millisecs {
+				Some(block_millisecs) =>
+					Box::new(chain_spec::development_config_custom_block_duration(block_millisecs)),
+				None => Box::new(chain_spec::development_config()),
+			},
+			"local" => Box::new(chain_spec::local_config()),
+			"solar-dev" | "solarnetwork_devnet" => Box::new(chain_spec::devnet_config()?),
+			"solar-test" | "solarnetwork_testnet" => Box::new(chain_spec::testnet_config()?),
+			"solar-local" | "solarnetwork__testnet_local" =>
+				Box::new(chain_spec::local_testnet_config()),
 			path =>
 				Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?),
-		})
+		};
+		Ok(spec)
 	}
 
 	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {

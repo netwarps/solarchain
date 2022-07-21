@@ -131,6 +131,12 @@ macro_rules! impl_runtime_apis_plus_common {
 			}
 
 
+			// impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
+			// 	fn authorities() -> Vec<AuthorityDiscoveryId> {
+			// 		AuthorityDiscovery::authorities()
+			// 	}
+			// }
+
 			impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 				fn account_nonce(account: AccountId) -> Index {
 					System::account_nonce(account)

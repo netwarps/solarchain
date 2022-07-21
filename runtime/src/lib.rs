@@ -947,7 +947,7 @@ parameter_types! {
 }
 
 type CouncilInstance = pallet_collective::Instance1;
-type TechCommitteeInstance = pallet_collective::Instance2;
+type TechnicalCommitteeInstance = pallet_collective::Instance2;
 
 impl pallet_collective::Config<CouncilInstance> for Runtime {
 	type Origin = Origin;
@@ -970,7 +970,7 @@ parameter_types! {
 	pub const TechnicalMaxMembers: u32 = 100;
 }
 
-impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
+impl pallet_collective::Config<TechnicalCommitteeInstance> for Runtime {
 	type Origin = Origin;
 	type Event = Event;
 	type Proposal = Call;
@@ -997,8 +997,8 @@ impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
 	type SwapOrigin = EnsureRoot<AccountId>;
 	type ResetOrigin = EnsureRoot<AccountId>;
 	type PrimeOrigin = EnsureRoot<AccountId>;
-	type MembershipInitialized = TechCommittee;
-	type MembershipChanged = TechCommittee;
+	type MembershipInitialized = TechnicalCommittee;
+	type MembershipChanged = TechnicalCommittee;
 	type MaxMembers = TechnicalMaxMembers;
 	type WeightInfo = pallet_membership::weights::SubstrateWeight<Runtime>;
 }
@@ -1059,10 +1059,10 @@ impl pallet_democracy::Config for Runtime {
 		pallet_collective::EnsureProportionAtLeast<AccountId, CouncilInstance, 3, 5>;
 	/// To allow a shorter voting/enactment period for external proposals.
 	type FastTrackOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 1, 2>;
+		pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCommitteeInstance, 1, 2>;
 	/// To instant fast track.
 	type InstantOrigin =
-		pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 3, 5>;
+		pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCommitteeInstance, 3, 5>;
 	// To cancel a proposal which has been passed.
 	type CancellationOrigin = EnsureOneOf<
 		EnsureRoot<AccountId>,
@@ -1071,12 +1071,12 @@ impl pallet_democracy::Config for Runtime {
 	// To cancel a proposal before it has been passed.
 	type CancelProposalOrigin = EnsureOneOf<
 		EnsureRoot<AccountId>,
-		pallet_collective::EnsureProportionAtLeast<AccountId, TechCommitteeInstance, 3, 5>,
+		pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCommitteeInstance, 3, 5>,
 	>;
 	type BlacklistOrigin = EnsureRoot<AccountId>;
 	// Any single technical committee member may veto a coming council proposal, however they can
 	// only do it once and it lasts only for the cooloff period.
-	type VetoOrigin = pallet_collective::EnsureMember<AccountId, TechCommitteeInstance>;
+	type VetoOrigin = pallet_collective::EnsureMember<AccountId, TechnicalCommitteeInstance>;
 	type CooloffPeriod = ConstU32<{ 7 * DAYS }>;
 	type PreimageByteDeposit = ConstU128<{ currency::STORAGE_BYTE_FEE }>;
 	type Slash = ();
@@ -1264,7 +1264,7 @@ construct_runtime!(
 		//Council stuff.
 		Council:
 			pallet_collective::<Instance1>::{Pallet, Call, Storage, Event<T>, Origin<T>, Config<T>}=13,
-		TechCommittee:
+		TechnicalCommittee:
 			pallet_collective::<Instance2>::{Pallet, Call, Storage, Event<T>, Origin<T>, Config<T>}=14,
 		Elections: pallet_elections_phragmen=15,
 		TechnicalMembership: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} =16 ,

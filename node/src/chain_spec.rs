@@ -510,7 +510,7 @@ fn testnet_genesis(
 		vesting: Default::default(),
 		democracy: Default::default(),
 		council: CouncilConfig::default(),
-		tech_committee: Default::default(),
+		technical_committee: Default::default(),
 		technical_membership: TechnicalMembershipConfig {
 			members: endowed_accounts
 				.iter()

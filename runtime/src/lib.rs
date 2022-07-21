@@ -12,7 +12,6 @@ use pallet_grandpa::{
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_api::impl_runtime_apis;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -30,7 +29,7 @@ use sp_runtime::{
 		InvalidTransaction, TransactionPriority, TransactionSource, TransactionValidity,
 		TransactionValidityError,
 	},
-	ApplyExtrinsicResult, FixedU128, MultiSignature, Percent, SaturatedConversion,
+	ApplyExtrinsicResult, MultiSignature, Percent, SaturatedConversion,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 #[cfg(feature = "std")]
@@ -48,7 +47,7 @@ use pallet_evm::{
 // A few exports that help ease life for downstream crates.
 use fp_rpc::TransactionStatus;
 use frame_election_provider_support::{
-	generate_solution_type, onchain, ElectionDataProvider, NposSolution, SequentialPhragmen,
+	onchain, SequentialPhragmen,
 	VoteWeight,
 };
 pub use frame_support::{
@@ -264,7 +263,7 @@ where
 
 type SlashCancelOrigin = EnsureOneOf<
 	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 2>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, Council, 1, 2>,
 >;
 
 pub struct ElectionProviderBenchmarkConfig;
@@ -336,7 +335,7 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
 	type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
 	// type ForceOrigin = EnsureOneOf<
 	// 	EnsureRoot<AccountId>,
-	// 	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 2, 3>,
+	// 	pallet_collective::EnsureProportionAtLeast<AccountId, Council, 2, 3>,
 	// >;//todo
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Self>;
@@ -989,6 +988,26 @@ impl pallet_collective::Config<TechCommitteeInstance> for Runtime {
 	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
 }
 
+
+// type EnsureRootOrHalfCouncil = EnsureOneOf<
+// 	EnsureRoot<AccountId>,
+// 	pallet_collective::EnsureProportionMoreThan<AccountId, Council, 1, 2>,
+// >;
+
+impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
+	type Event = Event;
+	type AddOrigin = EnsureRoot<AccountId>;
+	type RemoveOrigin = EnsureRoot<AccountId>;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type ResetOrigin = EnsureRoot<AccountId>;
+	type PrimeOrigin = EnsureRoot<AccountId>;
+	type MembershipInitialized = TechCommittee;
+	type MembershipChanged = TechCommittee;
+	type MaxMembers = TechnicalMaxMembers;
+	type WeightInfo = pallet_membership::weights::SubstrateWeight<Runtime>;
+}
+
+
 parameter_types! {
 	pub const CandidacyBond: Balance = 10 * currency::SOLAR;
 	// 1 storage item created, key size is 32 bytes, value size is 16+16.
@@ -1008,10 +1027,10 @@ impl pallet_elections_phragmen::Config for Runtime {
 	type Event = Event;
 	type PalletId = ElectionsPhragmenPalletId;
 	type Currency = Balances;
-	type ChangeMembers = CouncilCollective;
+	type ChangeMembers = Council;
 	// NOTE: this implies that council's genesis members cannot be set directly and must come from
 	// this module.
-	type InitializeMembers = CouncilCollective;
+	type InitializeMembers = Council;
 	type CurrencyToVote = U128CurrencyToVote;
 	type CandidacyBond = CandidacyBond;
 	type VotingBondBase = VotingBondBase;
@@ -1233,55 +1252,54 @@ construct_runtime!(
 		NodeBlock = opaque::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
-		System: frame_system,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-		Timestamp: pallet_timestamp,
-		Utility: pallet_utility,
-		Aura: pallet_aura,
-		Grandpa: pallet_grandpa,
-		Balances: pallet_balances,
-		Authorship: pallet_authorship,
-		TransactionPayment: pallet_transaction_payment,
-		Sudo: pallet_sudo,
-		Contracts: pallet_contracts,
-		Scheduler: pallet_scheduler,
-
-		Preimage: pallet_preimage,
-		Multisig: pallet_multisig,
-		Elections: pallet_elections_phragmen,
-		Tips: pallet_tips,
-
-		NodeAuthorization: pallet_node_authorization,
+		System: frame_system =0,
+		Aura: pallet_aura=1,
+		Timestamp: pallet_timestamp=2,
+		Balances: pallet_balances=3,
+		Authorship: pallet_authorship=4,
+		Staking: pallet_staking=5,
+		Offences: pallet_offences=6,
+		Historical: pallet_session_historical::{Pallet}=7,
+		Session: pallet_session=8,
+		Grandpa: pallet_grandpa=9,
+		ImOnline: pallet_im_online=10,
+		AuthorityDiscovery: pallet_authority_discovery=11,
 		// Governance stuff.
-		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>}=12,
 		//Council stuff.
-		CouncilCollective:
-			pallet_collective::<Instance1>::{Pallet, Call, Storage, Event<T>, Origin<T>, Config<T>},
-		TechCommitteeCollective:
-			pallet_collective::<Instance2>::{Pallet, Call, Storage, Event<T>, Origin<T>, Config<T>},
+		Council:
+			pallet_collective::<Instance1>::{Pallet, Call, Storage, Event<T>, Origin<T>, Config<T>}=13,
+		TechCommittee:
+			pallet_collective::<Instance2>::{Pallet, Call, Storage, Event<T>, Origin<T>, Config<T>}=14,
+		Elections: pallet_elections_phragmen=15,
+		TechnicalMembership: pallet_membership::<Instance1>::{Pallet, Call, Storage, Event<T>, Config<T>} =16 ,
 		//Treasury stuff.
-		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} ,
+		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>} =17,
+		Utility: pallet_utility=18,
 		// Vesting stuff.
-		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>} ,
+		Vesting: pallet_vesting::{Pallet, Call, Storage, Event<T>, Config<T>}=19 ,
+		Scheduler: pallet_scheduler=20,
+		Multisig: pallet_multisig=21,
+		Preimage: pallet_preimage=22,
+		Bounties: pallet_bounties=23,
+		ChildBounties: pallet_child_bounties=24,
+		Tips: pallet_tips=25,
+		ElectionProviderMultiPhase: pallet_election_provider_multi_phase=26,
+		BagsList: pallet_bags_list=27,
+		NominationPools: pallet_nomination_pools=28,
 
-		Bounties: pallet_bounties,
-		ChildBounties: pallet_child_bounties,
+		NodeAuthorization: pallet_node_authorization=29,
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip =30,
+		Sudo: pallet_sudo=31,
+		Contracts: pallet_contracts=32,
+		TransactionPayment: pallet_transaction_payment=33,
 
-		Session: pallet_session,
-		ImOnline: pallet_im_online,
-		AuthorityDiscovery: pallet_authority_discovery,
-		Offences: pallet_offences,
-		Historical: pallet_session_historical::{Pallet},
-		ElectionProviderMultiPhase: pallet_election_provider_multi_phase,
-		Staking: pallet_staking,
-		NominationPools: pallet_nomination_pools,
-		BagsList: pallet_bags_list,
-
-		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, Origin},
-		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
-		DynamicFee: pallet_dynamic_fee::{Pallet, Call, Storage, Config, Inherent},
-		BaseFee: pallet_base_fee::{Pallet, Call, Storage, Config<T>, Event},
-		HotfixSufficients: pallet_hotfix_sufficients::{Pallet, Call},
+		// Ethereum stuff.
+		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, Origin}=34,
+		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>}=35,
+		DynamicFee: pallet_dynamic_fee::{Pallet, Call, Storage, Config, Inherent}=36,
+		BaseFee: pallet_base_fee::{Pallet, Call, Storage, Config<T>, Event}=37,
+		HotfixSufficients: pallet_hotfix_sufficients::{Pallet, Call}=38,
 	}
 );
 

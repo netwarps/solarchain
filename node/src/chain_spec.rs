@@ -6,11 +6,11 @@ use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
 use solar_node_runtime::{
 	currency, opaque::SessionKeys, wasm_binary_unwrap, AccountId, AuraConfig, BalancesConfig,
-	BaseFeeConfig, Block, CouncilCollectiveConfig, Days, EVMConfig, ElectionsConfig,
+	BaseFeeConfig, Block, Days, EVMConfig, ElectionsConfig,
 	EpochDurationInBlocks, EpochDurationInSlots, EthereumConfig, GenesisConfig, GrandpaConfig,
 	Hours, MillisecsPerBlock, Minutes, NodeAuthorizationConfig, NominationPoolsConfig, Permill,
 	SecsPerBlock, SessionConfig, Signature, SlotDuration, StakerStatus, StakingConfig, SudoConfig,
-	SystemConfig, TechCommitteeCollectiveConfig, MILLISECS_PER_BLOCK,
+	SystemConfig,CouncilConfig,TechnicalMembershipConfig, MILLISECS_PER_BLOCK,
 };
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -427,7 +427,6 @@ fn testnet_genesis(
 
 	GenesisConfig {
 		system: SystemConfig {
-			// Add Wasm runtime to storage.
 			code: wasm_binary_unwrap().to_vec(),
 		},
 		balances: BalancesConfig {
@@ -512,8 +511,9 @@ fn testnet_genesis(
 		treasury: Default::default(),
 		vesting: Default::default(),
 		democracy: Default::default(),
-		council_collective: CouncilCollectiveConfig::default(),
-		tech_committee_collective: TechCommitteeCollectiveConfig {
+		council: CouncilConfig::default(),
+		tech_committee:Default::default() ,
+		technical_membership: TechnicalMembershipConfig {
 			members: endowed_accounts
 				.iter()
 				.take((num_endowed_accounts + 1) / 2)

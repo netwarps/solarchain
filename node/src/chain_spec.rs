@@ -5,15 +5,44 @@ use sc_service::ChainType;
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
 use solar_node_runtime::{
-	currency, opaque::SessionKeys, wasm_binary_unwrap, AccountId, AuraConfig, BalancesConfig,
-	BaseFeeConfig, Block, CouncilConfig, Days, EVMConfig, ElectionsConfig, EpochDurationInBlocks,
-	EpochDurationInSlots, EthereumConfig, GenesisConfig, GrandpaConfig, Hours, MillisecsPerBlock,
-	Minutes, NodeAuthorizationConfig, NominationPoolsConfig, Permill, SecsPerBlock, SessionConfig,
-	Signature, SlotDuration, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-	TechnicalMembershipConfig, MILLISECS_PER_BLOCK,
+	currency,
+	opaque::SessionKeys,
+	wasm_binary_unwrap,
+	AccountId,
+	BabeConfig,
+	BalancesConfig,
+	BaseFeeConfig,
+	Block,
+	CouncilConfig,
+	Days,
+	EVMConfig,
+	ElectionsConfig,
+	EpochDurationInBlocks,
+	EpochDurationInSlots,
+	EthereumConfig,
+	GenesisConfig,
+	GrandpaConfig,
+	Hours,
+	IndicesConfig,
+	MillisecsPerBlock,
+	Minutes,
+	NodeAuthorizationConfig,
+	NominationPoolsConfig,
+	Permill,
+	SecsPerBlock,
+	SessionConfig,
+	Signature,
+	SlotDuration,
+	StakerStatus,
+	StakingConfig,
+	SudoConfig,
+	SystemConfig,
+	TechnicalMembershipConfig,
+	//TechnicalCommitteeConfig,
+	MILLISECS_PER_BLOCK,
 };
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::crypto::UncheckedInto;
 use sp_core::{crypto::AccountId32, sr25519, OpaquePeerId, Pair, Public, H160, U256}; /* A struct wraps Vec<u8>, represents as our `PeerId`. */
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -105,12 +134,12 @@ where
 
 pub fn authority_keys_from_seed(
 	seed: &str,
-) -> (AccountId, AccountId, GrandpaId, AuraId, ImOnlineId, AuthorityDiscoveryId) {
+) -> (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId, AuthorityDiscoveryId) {
 	(
 		get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
 		get_account_id_from_seed::<sr25519::Public>(seed),
 		get_from_seed::<GrandpaId>(seed),
-		get_from_seed::<AuraId>(seed),
+		get_from_seed::<BabeId>(seed),
 		get_from_seed::<ImOnlineId>(seed),
 		get_from_seed::<AuthorityDiscoveryId>(seed),
 	)
@@ -118,11 +147,11 @@ pub fn authority_keys_from_seed(
 
 fn session_keys(
 	grandpa: GrandpaId,
-	aura: AuraId,
+	babe: BabeId,
 	im_online: ImOnlineId,
 	authority_discovery: AuthorityDiscoveryId,
 ) -> SessionKeys {
-	SessionKeys { grandpa, aura, im_online, authority_discovery }
+	SessionKeys { grandpa, babe, im_online, authority_discovery }
 }
 
 /// Development config (single validator Alice)
@@ -288,7 +317,7 @@ fn testnet_local_config_genesis() -> GenesisConfig {
 		AccountId,
 		AccountId,
 		GrandpaId,
-		AuraId,
+		BabeId,
 		ImOnlineId,
 		AuthorityDiscoveryId,
 	)> = vec![
@@ -390,7 +419,7 @@ fn testnet_genesis(
 		AccountId,
 		AccountId,
 		GrandpaId,
-		AuraId,
+		BabeId,
 		ImOnlineId,
 		AuthorityDiscoveryId,
 	)>,
@@ -430,7 +459,11 @@ fn testnet_genesis(
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
 		},
-		aura: AuraConfig { authorities: vec![] },
+		indices: IndicesConfig { indices: vec![] },
+		babe: BabeConfig {
+			authorities: vec![],
+			epoch_config: Some(solar_node_runtime::BABE_GENESIS_EPOCH_CONFIG),
+		},
 		grandpa: GrandpaConfig { authorities: vec![] },
 		sudo: SudoConfig { key: Some(root_key) },
 		transaction_payment: Default::default(),

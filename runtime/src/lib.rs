@@ -5,6 +5,9 @@
 
 use codec::{Decode, Encode};
 use frame_system::limits::{BlockLength, BlockWeights};
+pub use node_primitives::{
+	AccountId, AccountIndex, Balance, BlockNumber, Hash, Index, Moment, Signature,
+};
 use pallet_contracts::{migration, weights::WeightInfo, DefaultContractAccessWeight};
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
@@ -12,6 +15,7 @@ use pallet_grandpa::{
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 use sp_api::impl_runtime_apis;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
 	crypto::{ByteArray, KeyTypeId},
@@ -23,13 +27,13 @@ use sp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{
 		AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, DispatchInfoOf, Dispatchable,
-		IdentifyAccount, NumberFor, OpaqueKeys, PostDispatchInfoOf, Verify,
+		NumberFor, OpaqueKeys, PostDispatchInfoOf,
 	},
 	transaction_validity::{
 		InvalidTransaction, TransactionPriority, TransactionSource, TransactionValidity,
 		TransactionValidityError,
 	},
-	ApplyExtrinsicResult, MultiSignature, Percent, SaturatedConversion,
+	ApplyExtrinsicResult, Percent, SaturatedConversion,
 };
 use sp_std::{marker::PhantomData, prelude::*};
 #[cfg(feature = "std")]
@@ -121,28 +125,6 @@ pub mod currency {
 	}
 }
 
-/// An index to a block.
-pub type BlockNumber = u32;
-
-/// An instant or duration in time.
-pub type Moment = u64;
-
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = MultiSignature;
-
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-
-/// Balance of an account.
-pub type Balance = u128;
-
-/// Index of a transaction in the chain.
-pub type Index = u32;
-
-/// A hash of some data used by the chain.
-pub type Hash = sp_core::H256;
-
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -168,6 +150,11 @@ pub mod opaque {
 		}
 	}
 }
+
+type EnsureRootOrHalfCouncil = EnsureOneOf<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionMoreThan<AccountId, CouncilInstance, 1, 2>,
+>;
 
 parameter_types! {
 	pub const Period: BlockNumber = 5;
@@ -258,11 +245,6 @@ where
 	type OverarchingCall = Call;
 }
 
-type SlashCancelOrigin = EnsureOneOf<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionAtLeast<AccountId, Council, 1, 2>,
->;
-
 pub struct ElectionProviderBenchmarkConfig;
 impl pallet_election_provider_multi_phase::BenchmarkingConfig for ElectionProviderBenchmarkConfig {
 	const VOTERS: [u32; 2] = [1000, 2000];
@@ -330,11 +312,7 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
 		(),
 	>;
 	type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
-	// type ForceOrigin = EnsureOneOf<
-	// 	EnsureRoot<AccountId>,
-	// 	pallet_collective::EnsureProportionAtLeast<AccountId, Council, 2, 3>,
-	// >;//todo
-	type ForceOrigin = EnsureRoot<AccountId>;
+	type ForceOrigin = EnsureRootOrHalfCouncil;
 	type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Self>;
 	type MaxElectingVoters = MaxElectingVoters;
 	type MaxElectableTargets = ConstU16<{ u16::MAX }>;
@@ -356,8 +334,10 @@ impl pallet_staking::Config for Runtime {
 	type BondingDuration = BondingDuration;
 	type SlashDeferDuration = SlashDeferDuration;
 	// A majority of the council or root can cancel the slash.
-	//type SlashCancelOrigin = SlashCancelOrigin; //todo
-	type SlashCancelOrigin = EnsureRoot<AccountId>;
+	type SlashCancelOrigin = EnsureOneOf<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<AccountId, CouncilInstance, 3, 4>,
+	>;
 	type SessionInterface = Self;
 	type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
 	type NextNewSession = Session;
@@ -772,7 +752,7 @@ impl pallet_scheduler::Config for Runtime {
 	type PalletsOrigin = OriginCaller;
 	type Call = Call;
 	type MaximumWeight = MaximumSchedulerWeight;
-	type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
+	type ScheduleOrigin = EnsureRootOrHalfCouncil;
 	type MaxScheduledPerBlock = MaxScheduledPerBlock;
 	type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
@@ -805,10 +785,10 @@ impl pallet_node_authorization::Config for Runtime {
 	type Event = Event;
 	type MaxWellKnownNodes = MaxWellKnownNodes;
 	type MaxPeerIdLength = MaxPeerIdLength;
-	type AddOrigin = EnsureRoot<AccountId>;
-	type RemoveOrigin = EnsureRoot<AccountId>;
-	type SwapOrigin = EnsureRoot<AccountId>;
-	type ResetOrigin = EnsureRoot<AccountId>;
+	type AddOrigin = EnsureRootOrHalfCouncil;
+	type RemoveOrigin = EnsureRootOrHalfCouncil;
+	type SwapOrigin = EnsureRootOrHalfCouncil;
+	type ResetOrigin = EnsureRootOrHalfCouncil;
 	type WeightInfo = ();
 }
 
@@ -985,18 +965,13 @@ impl pallet_collective::Config<TechnicalCommitteeInstance> for Runtime {
 	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
 }
 
-// type EnsureRootOrHalfCouncil = EnsureOneOf<
-// 	EnsureRoot<AccountId>,
-// 	pallet_collective::EnsureProportionMoreThan<AccountId, Council, 1, 2>,
-// >;
-
 impl pallet_membership::Config<pallet_membership::Instance1> for Runtime {
 	type Event = Event;
-	type AddOrigin = EnsureRoot<AccountId>;
-	type RemoveOrigin = EnsureRoot<AccountId>;
-	type SwapOrigin = EnsureRoot<AccountId>;
-	type ResetOrigin = EnsureRoot<AccountId>;
-	type PrimeOrigin = EnsureRoot<AccountId>;
+	type AddOrigin = EnsureRootOrHalfCouncil;
+	type RemoveOrigin = EnsureRootOrHalfCouncil;
+	type SwapOrigin = EnsureRootOrHalfCouncil;
+	type ResetOrigin = EnsureRootOrHalfCouncil;
+	type PrimeOrigin = EnsureRootOrHalfCouncil;
 	type MembershipInitialized = TechnicalCommittee;
 	type MembershipChanged = TechnicalCommittee;
 	type MaxMembers = TechnicalMaxMembers;
@@ -1100,18 +1075,13 @@ type TreasuryApproveOrigin = EnsureOneOf<
 	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilInstance, 3, 5>,
 >;
 
-type TreasuryRejectOrigin = EnsureOneOf<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionMoreThan<AccountId, CouncilInstance, 1, 2>,
->;
-
 impl pallet_treasury::Config for Runtime {
 	type PalletId = TreasuryId;
 	type Currency = Balances;
 	// At least three-fifths majority of the council is required (or root) to approve a proposal
 	type ApproveOrigin = TreasuryApproveOrigin;
 	// More than half of the council is required (or root) to reject a proposal
-	type RejectOrigin = TreasuryRejectOrigin;
+	type RejectOrigin = EnsureRootOrHalfCouncil;
 	type Event = Event;
 	// If spending proposal rejected, transfer proposer bond to treasury
 	type OnSlash = Treasury;
@@ -1362,83 +1332,6 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
-impl_runtime_apis_plus_common! {
-	impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
-		fn validate_transaction(
-			source: TransactionSource,
-			xt: <Block as BlockT>::Extrinsic,
-			block_hash: <Block as BlockT>::Hash,
-		) -> TransactionValidity {
-			// Filtered calls should not enter the tx pool as they'll fail if inserted.
-			// If this call is not allowed, we return early.
-			if !<Runtime as frame_system::Config>::BaseCallFilter::contains(&xt.0.function) {
-				return InvalidTransaction::Call.into();
-			}
-
-			// This runtime uses Substrate's pallet transaction payment. This
-			// makes the chain feel like a standard Substrate chain when submitting
-			// frame transactions and using Substrate ecosystem tools. It has the downside that
-			// transaction are not prioritized by gas_price. The following code reprioritizes
-			// transactions to overcome this.
-			//
-			// A more elegant, ethereum-first solution is
-			// a pallet that replaces pallet transaction payment, and allows users
-			// to directly specify a gas price rather than computing an effective one.
-			// #HopefullySomeday
-
-			// First we pass the transactions to the standard FRAME executive. This calculates all the
-			// necessary tags, longevity and other properties that we will leave unchanged.
-			// This also assigns some priority that we don't care about and will overwrite next.
-			let mut intermediate_valid = Executive::validate_transaction(source, xt.clone(), block_hash)?;
-
-			let dispatch_info = xt.get_dispatch_info();
-
-			// If this is a pallet ethereum transaction, then its priority is already set
-			// according to gas price from pallet ethereum. If it is any other kind of transaction,
-			// we modify its priority.
-			Ok(match &xt.0.function {
-				Call::Ethereum(transact { .. }) => intermediate_valid,
-				_ if dispatch_info.class != DispatchClass::Normal => intermediate_valid,
-				_ => {
-					let tip = match xt.0.signature {
-						None => 0,
-						Some((_, _, ref signed_extra)) => {
-							// Yuck, this depends on the index of charge transaction in Signed Extra
-							let charge_transaction = &signed_extra.7;
-							charge_transaction.tip()
-						}
-					};
-
-					// Calculate the fee that will be taken by pallet transaction payment
-					let fee: u64 = TransactionPayment::compute_fee(
-						xt.encode().len() as u32,
-						&dispatch_info,
-						tip,
-					).saturated_into();
-
-					// Calculate how much gas this effectively uses according to the existing mapping
-					let effective_gas =
-						<Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
-							dispatch_info.weight
-						);
-
-					// Here we calculate an ethereum-style effective gas price using the
-					// current fee of the transaction. Because the weight -> gas conversion is
-					// lossy, we have to handle the case where a very low weight maps to zero gas.
-					let effective_gas_price = if effective_gas > 0 {
-						fee / effective_gas
-					} else {
-						// If the effective gas was zero, we just act like it was 1.
-						fee
-					};
-
-					// Overwrite the original prioritization with this ethereum one
-					intermediate_valid.priority = effective_gas_price;
-					intermediate_valid
-				}
-			})
-		}
-	}
-}
+impl_runtime_apis_plus_common!();
 
 impl_self_contained_call!();

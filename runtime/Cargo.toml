@@ -20,6 +20,7 @@ static_assertions = "1.1.0"
 
 pallet-aura = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",branch = "polkadot-v0.9.22", package = "pallet-aura", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",branch = "polkadot-v0.9.22", package = "pallet-balances", default-features = false }
+pallet-indices= { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",branch = "polkadot-v0.9.22", package = "pallet-indices", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",branch = "polkadot-v0.9.22", package = "pallet-grandpa", default-features = false }
 pallet-authorship = { git = "https://github.com/paritytech/substrate", version = "4.0.0-dev",branch = "polkadot-v0.9.22",package = "pallet-authorship", default-features = false }
 node-primitives = { git = "https://github.com/paritytech/substrate",version = "2.0.0", branch = "polkadot-v0.9.22", default-features = false }
@@ -139,6 +140,7 @@ std = [
 	"frame-system/std",
 	"pallet-aura/std",
 	"pallet-balances/std",
+	"pallet-indices/std",
 	"pallet-grandpa/std",
 	"pallet-authorship/std",
 	"pallet-randomness-collective-flip/std",

@@ -10,7 +10,7 @@ use solar_node_runtime::{
 	EpochDurationInSlots, EthereumConfig, GenesisConfig, GrandpaConfig, Hours, MillisecsPerBlock,
 	Minutes, NodeAuthorizationConfig, NominationPoolsConfig, Permill, SecsPerBlock, SessionConfig,
 	Signature, SlotDuration, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-	TechnicalMembershipConfig, MILLISECS_PER_BLOCK,
+	TechnicalMembershipConfig,IndicesConfig, MILLISECS_PER_BLOCK,
 };
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -430,6 +430,7 @@ fn testnet_genesis(
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
 		},
+		indices: IndicesConfig { indices: vec![] },
 		aura: AuraConfig { authorities: vec![] },
 		grandpa: GrandpaConfig { authorities: vec![] },
 		sudo: SudoConfig { key: Some(root_key) },

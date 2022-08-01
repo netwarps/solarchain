@@ -550,6 +550,18 @@ impl pallet_aura::Config for Runtime {
 	type MaxAuthorities = ConstU32<32>;
 }
 
+parameter_types! {
+	pub const IndexDeposit: Balance = 1 * currency::UNIT;
+}
+
+impl pallet_indices::Config for Runtime {
+	type AccountIndex = AccountIndex;
+	type Currency = Balances;
+	type Deposit = IndexDeposit;
+	type Event = Event;
+	type WeightInfo = pallet_indices::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_grandpa::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -1219,6 +1231,7 @@ construct_runtime!(
 	{
 		System: frame_system =0,
 		Aura: pallet_aura=1,
+		Indices:pallet_indices=39,
 		Timestamp: pallet_timestamp=2,
 		Balances: pallet_balances=3,
 		Authorship: pallet_authorship=4,

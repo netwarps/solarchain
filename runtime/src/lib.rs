@@ -491,7 +491,6 @@ parameter_types! {
 }
 
 // Configure FRAME pallets to include in runtime.
-
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -546,7 +545,7 @@ impl frame_system::Config for Runtime {
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
-	type DisabledValidators = ();
+	type DisabledValidators = Session;
 	type MaxAuthorities = ConstU32<32>;
 }
 
@@ -588,10 +587,8 @@ parameter_types! {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	//type FindAuthor=();
 	type UncleGenerations = UncleGenerations;
 	type FilterUncle = ();
-	//type EventHandler=();
 	type EventHandler = (Staking, ImOnline);
 }
 

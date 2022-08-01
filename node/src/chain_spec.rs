@@ -38,6 +38,7 @@ use solar_node_runtime::{
 	SudoConfig,
 	SystemConfig,
 	TechnicalMembershipConfig,
+	EPOCH_DURATION_IN_BLOCKS,
 	//TechnicalCommitteeConfig,
 	MILLISECS_PER_BLOCK,
 };
@@ -104,11 +105,9 @@ impl sp_runtime::BuildStorage for GenesisExt {
 				Minutes::set(&minutes);
 				Hours::set(&hours);
 				Days::set(&days);
-
 				SlotDuration::set(bm);
-				EpochDurationInBlocks::set(&hours);
-
-				EpochDurationInSlots::set(&(hours as u64));
+				EpochDurationInBlocks::set(&EPOCH_DURATION_IN_BLOCKS);
+				EpochDurationInSlots::set(&(EPOCH_DURATION_IN_BLOCKS as u64));
 			}
 		});
 		self.runtime_genesis_config.assimilate_storage(storage)

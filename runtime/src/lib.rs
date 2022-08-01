@@ -152,7 +152,6 @@ pub mod opaque {
 	}
 }
 
-
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
 #[sp_version::runtime_version]
@@ -179,7 +178,7 @@ pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
 		allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
 	};
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * HOURS;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * MINUTES;
 
 /// Change this to adjust the block time.
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
@@ -200,10 +199,10 @@ pub const DAYS: BlockNumber = HOURS * 24;
 // Storage
 frame_support::parameter_types! {
 	pub storage MillisecsPerBlock: Moment = MILLISECS_PER_BLOCK;
-	pub storage SecsPerBlock: Moment = MILLISECS_PER_BLOCK / 1000;
+	pub storage SecsPerBlock: Moment = SECS_PER_BLOCK;
 
-	pub storage SlotDuration: Moment = MILLISECS_PER_BLOCK;
-	pub storage EpochDurationInBlocks: BlockNumber =  1 * HOURS;
+	pub storage SlotDuration: Moment = SLOT_DURATION;
+	pub storage EpochDurationInBlocks: BlockNumber =  EPOCH_DURATION_IN_BLOCKS;
 	pub storage EpochDurationInSlots: u64 = {
 		const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
@@ -211,9 +210,9 @@ frame_support::parameter_types! {
 	};
 
 	// These time units are defined in number of blocks.
-	pub storage Minutes: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
-	pub storage Hours: BlockNumber = MINUTES * 60;
-	pub storage Days: BlockNumber = HOURS * 24;
+	pub storage Minutes: BlockNumber = MINUTES;
+	pub storage Hours: BlockNumber = HOURS;
+	pub storage Days: BlockNumber = DAYS;
 }
 
 /// The version information used to identify this runtime when compiled natively.
@@ -544,7 +543,6 @@ impl pallet_nomination_pools::Config for Runtime {
 	type MaxUnbonding = ConstU32<8>;
 	type PalletId = NominationPoolsPalletId;
 }
-
 
 parameter_types! {
 	// NOTE: Currently it is not possible to change the epoch duration after the chain has started.

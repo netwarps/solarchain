@@ -151,6 +151,173 @@ pub mod opaque {
 		}
 	}
 }
+
+
+// To learn more about runtime versioning and what each of the following value means:
+//   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
+#[sp_version::runtime_version]
+pub const VERSION: RuntimeVersion = RuntimeVersion {
+	spec_name: create_runtime_str!("solar-node"),
+	impl_name: create_runtime_str!("solar-node"),
+	authoring_version: 1,
+	// The version of the runtime specification. A full node will not attempt to use its native
+	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
+	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
+	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
+	//   the compatible custom types.
+	spec_version: 112,
+	impl_version: 1,
+	apis: RUNTIME_API_VERSIONS,
+	transaction_version: 1,
+	state_version: 1,
+};
+
+/// The BABE epoch configuration at genesis.
+pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
+	sp_consensus_babe::BabeEpochConfiguration {
+		c: PRIMARY_PROBABILITY,
+		allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
+	};
+
+pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * HOURS;
+
+/// Change this to adjust the block time.
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
+
+// NOTE: Currently it is not possible to change the slot duration after the chain has started.
+//       Attempting to do so will brick block production.
+pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
+
+// 1 in 4 blocks (on average, not counting collisions) will be primary BABE blocks.
+pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
+
+// Time is measured by number of blocks.
+pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const HOURS: BlockNumber = MINUTES * 60;
+pub const DAYS: BlockNumber = HOURS * 24;
+
+// Storage
+frame_support::parameter_types! {
+	pub storage MillisecsPerBlock: Moment = MILLISECS_PER_BLOCK;
+	pub storage SecsPerBlock: Moment = MILLISECS_PER_BLOCK / 1000;
+
+	pub storage SlotDuration: Moment = MILLISECS_PER_BLOCK;
+	pub storage EpochDurationInBlocks: BlockNumber =  1 * HOURS;
+	pub storage EpochDurationInSlots: u64 = {
+		const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
+
+		(EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
+	};
+
+	// These time units are defined in number of blocks.
+	pub storage Minutes: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
+	pub storage Hours: BlockNumber = MINUTES * 60;
+	pub storage Days: BlockNumber = HOURS * 24;
+}
+
+/// The version information used to identify this runtime when compiled natively.
+#[cfg(feature = "std")]
+pub fn native_version() -> NativeVersion {
+	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
+}
+
+const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+
+/// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.
+/// This is used to limit the maximal weight of a single extrinsic.
+const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
+
+/// We allow for 2 seconds of compute with a 6 second average block time.
+const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+
+// Prints debug output of the `contracts` pallet to stdout if the node is
+// started with `-lruntime::contracts=debug`.
+const CONTRACTS_DEBUG_OUTPUT: bool = true;
+
+parameter_types! {
+	pub const BlockHashCount: BlockNumber = 2400;
+	pub const Version: RuntimeVersion = VERSION;
+
+	// This part is copied from Substrate's `bin/node/runtime/src/lib.rs`.
+	//  The `RuntimeBlockLength` and `RuntimeBlockWeights` exist here because the
+	// `DeletionWeightLimit` and `DeletionQueueDepth` depend on those to parameterize
+	// the lazy contract deletion.
+	pub RuntimeBlockLength: BlockLength =
+		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
+		.base_block(BlockExecutionWeight::get())
+		.for_class(DispatchClass::all(), |weights| {
+			weights.base_extrinsic = ExtrinsicBaseWeight::get();
+		})
+		.for_class(DispatchClass::Normal, |weights| {
+			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+		})
+		.for_class(DispatchClass::Operational, |weights| {
+			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+			// Operational transactions have some extra reserved space, so that they
+			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
+			weights.reserved = Some(
+				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+			);
+		})
+		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
+		.build_or_panic();
+}
+
+// Configure FRAME pallets to include in runtime.
+impl frame_system::Config for Runtime {
+	/// The basic call filter to use in dispatchable.
+	type BaseCallFilter = frame_support::traits::Everything;
+	/// Block & extrinsics weights: base values and limits.
+	type BlockWeights = RuntimeBlockWeights;
+	/// The maximum length of a block (in bytes).
+	type BlockLength = RuntimeBlockLength;
+	/// The identifier used to distinguish between accounts.
+	type AccountId = AccountId;
+	/// The aggregated dispatch type that is available for extrinsics.
+	type Call = Call;
+	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+	type Lookup = AccountIdLookup<AccountId, ()>;
+	/// The index type for storing how many extrinsics an account has signed.
+	type Index = Index;
+	/// The index type for blocks.
+	type BlockNumber = BlockNumber;
+	/// The type for hashing blocks and tries.
+	type Hash = Hash;
+	/// The hashing algorithm used.
+	type Hashing = BlakeTwo256;
+	/// The header type.
+	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	/// The ubiquitous event type.
+	type Event = Event;
+	/// The ubiquitous origin type.
+	type Origin = Origin;
+	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
+	type BlockHashCount = BlockHashCount; //ConstU32<256>;
+	/// The weight of database operations that the runtime can invoke.
+	type DbWeight = RocksDbWeight;
+	/// Version of the runtime.
+	type Version = Version;
+	/// Converts a module to the index of the module in `construct_runtime!`.
+	///
+	/// This type is being generated by `construct_runtime!`.
+	type PalletInfo = PalletInfo;
+	/// What to do if a new account is created.
+	type OnNewAccount = ();
+	/// What to do if an account is fully reaped from the system.
+	type OnKilledAccount = ();
+	/// The data to be stored in an account.
+	type AccountData = pallet_balances::AccountData<Balance>;
+	/// Weight information for the extrinsics of this pallet.
+	type SystemWeightInfo = ();
+	/// This is used as an identifier of the chain. 42 is the generic substrate prefix.
+	type SS58Prefix = ConstU16<42>;
+	/// The set code logic, just the default since we're not a parachain.
+	type OnSetCode = ();
+	type MaxConsumers = ConstU32<16>;
+}
+
 type EnsureRootOrHalfCouncil = EnsureOneOf<
 	EnsureRoot<AccountId>,
 	pallet_collective::EnsureProportionMoreThan<AccountId, CouncilInstance, 1, 2>,
@@ -171,34 +338,6 @@ impl pallet_session::Config for Runtime {
 impl pallet_session::historical::Config for Runtime {
 	type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
 	type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
-}
-
-pallet_staking_reward_curve::build! {
-	const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
-		min_inflation: 0_025_000,
-		max_inflation: 0_100_000,
-		ideal_stake: 0_500_000,
-		falloff: 0_050_000,
-		max_piece_count: 40,
-		test_precision: 0_005_000,
-	);
-}
-
-parameter_types! {
-	pub const SessionsPerEra: sp_staking::SessionIndex = 6;
-	pub const BondingDuration: sp_staking::EraIndex = 24 * 28;
-	pub const SlashDeferDuration: sp_staking::EraIndex = 24 * 7; // 1/4 the bonding duration.
-	pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
-	pub const MaxNominatorRewardedPerValidator: u32 = 256;
-	pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
-	pub OffchainRepeat: BlockNumber = 5;
-}
-
-pub struct StakingBenchmarkingConfig;
-
-impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
-	type MaxNominators = ConstU32<1000>;
-	type MaxValidators = ConstU32<1000>;
 }
 
 frame_election_provider_support::generate_solution_type!(
@@ -313,6 +452,34 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
 	type MaxElectableTargets = ConstU16<{ u16::MAX }>;
 }
 
+pallet_staking_reward_curve::build! {
+	const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
+		min_inflation: 0_025_000,
+		max_inflation: 0_100_000,
+		ideal_stake: 0_500_000,
+		falloff: 0_050_000,
+		max_piece_count: 40,
+		test_precision: 0_005_000,
+	);
+}
+
+parameter_types! {
+	pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+	pub const BondingDuration: sp_staking::EraIndex = 24 * 28;
+	pub const SlashDeferDuration: sp_staking::EraIndex = 24 * 7; // 1/4 the bonding duration.
+	pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
+	pub const MaxNominatorRewardedPerValidator: u32 = 256;
+	pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
+	pub OffchainRepeat: BlockNumber = 5;
+}
+
+pub struct StakingBenchmarkingConfig;
+
+impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
+	type MaxNominators = ConstU32<1000>;
+	type MaxValidators = ConstU32<1000>;
+}
+
 impl pallet_staking::Config for Runtime {
 	type MaxNominations = ConstU32<1000>;
 	type Currency = Balances;
@@ -378,171 +545,6 @@ impl pallet_nomination_pools::Config for Runtime {
 	type PalletId = NominationPoolsPalletId;
 }
 
-// To learn more about runtime versioning and what each of the following value means:
-//   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
-#[sp_version::runtime_version]
-pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("solar-node"),
-	impl_name: create_runtime_str!("solar-node"),
-	authoring_version: 1,
-	// The version of the runtime specification. A full node will not attempt to use its native
-	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
-	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
-	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
-	//   the compatible custom types.
-	spec_version: 112,
-	impl_version: 1,
-	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
-	state_version: 1,
-};
-
-/// The BABE epoch configuration at genesis.
-pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
-	sp_consensus_babe::BabeEpochConfiguration {
-		c: PRIMARY_PROBABILITY,
-		allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
-	};
-
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 10 * MINUTES;
-
-/// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-
-// NOTE: Currently it is not possible to change the slot duration after the chain has started.
-//       Attempting to do so will brick block production.
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
-// 1 in 4 blocks (on average, not counting collisions) will be primary BABE blocks.
-pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
-
-// Time is measured by number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
-
-// Storage
-frame_support::parameter_types! {
-	pub storage MillisecsPerBlock: Moment = MILLISECS_PER_BLOCK;
-	pub storage SecsPerBlock: Moment = MILLISECS_PER_BLOCK / 1000;
-
-	pub storage SlotDuration: Moment = MILLISECS_PER_BLOCK;
-	pub storage EpochDurationInBlocks: BlockNumber = 1 * HOURS;
-	pub storage EpochDurationInSlots: u64 = {
-		const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
-
-		(EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
-	};
-
-	// These time units are defined in number of blocks.
-	pub storage Minutes: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
-	pub storage Hours: BlockNumber = MINUTES * 60;
-	pub storage Days: BlockNumber = HOURS * 24;
-}
-
-/// The version information used to identify this runtime when compiled natively.
-#[cfg(feature = "std")]
-pub fn native_version() -> NativeVersion {
-	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
-}
-
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-
-/// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.
-/// This is used to limit the maximal weight of a single extrinsic.
-const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
-
-/// We allow for 2 seconds of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
-
-// Prints debug output of the `contracts` pallet to stdout if the node is
-// started with `-lruntime::contracts=debug`.
-const CONTRACTS_DEBUG_OUTPUT: bool = true;
-
-parameter_types! {
-	pub const BlockHashCount: BlockNumber = 2400;
-	pub const Version: RuntimeVersion = VERSION;
-
-	// This part is copied from Substrate's `bin/node/runtime/src/lib.rs`.
-	//  The `RuntimeBlockLength` and `RuntimeBlockWeights` exist here because the
-	// `DeletionWeightLimit` and `DeletionQueueDepth` depend on those to parameterize
-	// the lazy contract deletion.
-	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
-	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
-		.base_block(BlockExecutionWeight::get())
-		.for_class(DispatchClass::all(), |weights| {
-			weights.base_extrinsic = ExtrinsicBaseWeight::get();
-		})
-		.for_class(DispatchClass::Normal, |weights| {
-			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
-		})
-		.for_class(DispatchClass::Operational, |weights| {
-			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
-			// Operational transactions have some extra reserved space, so that they
-			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
-			weights.reserved = Some(
-				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
-			);
-		})
-		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
-		.build_or_panic();
-}
-
-// Configure FRAME pallets to include in runtime.
-
-impl frame_system::Config for Runtime {
-	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = frame_support::traits::Everything;
-	/// Block & extrinsics weights: base values and limits.
-	type BlockWeights = RuntimeBlockWeights;
-	/// The maximum length of a block (in bytes).
-	type BlockLength = RuntimeBlockLength;
-	/// The identifier used to distinguish between accounts.
-	type AccountId = AccountId;
-	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
-	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-	type Lookup = AccountIdLookup<AccountId, ()>;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
-	/// The type for hashing blocks and tries.
-	type Hash = Hash;
-	/// The hashing algorithm used.
-	type Hashing = BlakeTwo256;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	/// The ubiquitous event type.
-	type Event = Event;
-	/// The ubiquitous origin type.
-	type Origin = Origin;
-	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-	type BlockHashCount = BlockHashCount; //ConstU32<256>;
-	/// The weight of database operations that the runtime can invoke.
-	type DbWeight = RocksDbWeight;
-	/// Version of the runtime.
-	type Version = Version;
-	/// Converts a module to the index of the module in `construct_runtime!`.
-	///
-	/// This type is being generated by `construct_runtime!`.
-	type PalletInfo = PalletInfo;
-	/// What to do if a new account is created.
-	type OnNewAccount = ();
-	/// What to do if an account is fully reaped from the system.
-	type OnKilledAccount = ();
-	/// The data to be stored in an account.
-	type AccountData = pallet_balances::AccountData<Balance>;
-	/// Weight information for the extrinsics of this pallet.
-	type SystemWeightInfo = ();
-	/// This is used as an identifier of the chain. 42 is the generic substrate prefix.
-	type SS58Prefix = ConstU16<42>;
-	/// The set code logic, just the default since we're not a parachain.
-	type OnSetCode = ();
-	type MaxConsumers = ConstU32<16>;
-}
 
 parameter_types! {
 	// NOTE: Currently it is not possible to change the epoch duration after the chain has started.

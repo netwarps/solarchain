@@ -84,6 +84,7 @@ mod impl_on_charge_evm_transaction;
 mod impl_runtime_apis_plus_common;
 mod impl_self_contained_call;
 mod precompiles;
+mod voter_bags;
 pub use precompiles::FrontierPrecompiles;
 
 // Make the WASM binary available.
@@ -114,6 +115,7 @@ pub mod currency {
 	pub const MICROSOLAR: Balance = 1_000_000_000_000;
 	pub const MILLISOLAR: Balance = 1_000_000_000_000_000;
 	pub const SOLAR: Balance = 1_000_000_000_000_000_000;
+	pub const CENTS: Balance = SOLAR / 100;
 	pub const KILOSOLAR: Balance = 1_000_000_000_000_000_000_000;
 	// Unit = the base number of indivisible units for balances
 	pub const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -178,7 +180,7 @@ pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
 		allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
 	};
 
-pub const EPOCH_DURATION_IN_BLOCKS: u32 = 1 * MINUTES;
+pub const EPOCH_DURATION_IN_BLOCKS: u32 =  MINUTES;
 
 /// Change this to adjust the block time.
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
@@ -390,14 +392,14 @@ impl pallet_election_provider_multi_phase::BenchmarkingConfig for ElectionProvid
 }
 
 parameter_types! {
-	// phase durations. 1/4 of the last session for each.
-	pub const SignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
-	pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 4;
+	// phase durations. 1/2 of the last session for each.
+	pub const SignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 2;
+	pub const UnsignedPhase: u32 = EPOCH_DURATION_IN_BLOCKS / 2;
 
 	// signed config
 	pub const SignedRewardBase: Balance = 1 * currency::SOLAR;
 	pub const SignedDepositBase: Balance = 1 * currency::SOLAR;
-	pub const SignedDepositByte: Balance = 1 * currency::SOLAR/100;
+	pub const SignedDepositByte: Balance = 1 * currency::CENTS;
 
 	pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(1u32, 10_000);
 
@@ -463,9 +465,9 @@ pallet_staking_reward_curve::build! {
 }
 
 parameter_types! {
-	pub const SessionsPerEra: sp_staking::SessionIndex = 6;
-	pub const BondingDuration: sp_staking::EraIndex = 24 * 28;
-	pub const SlashDeferDuration: sp_staking::EraIndex = 24 * 7; // 1/4 the bonding duration.
+	pub const SessionsPerEra: sp_staking::SessionIndex = 2;
+	pub const BondingDuration: sp_staking::EraIndex = 4 ;
+	pub const SlashDeferDuration: sp_staking::EraIndex = 1; // 1/4 the bonding duration.
 	pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
 	pub const MaxNominatorRewardedPerValidator: u32 = 256;
 	pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
@@ -801,7 +803,7 @@ impl pallet_scheduler::Config for Runtime {
 parameter_types! {
 	pub const PreimageMaxSize: u32 = 4096 * 1024;
 	pub const PreimageBaseDeposit: Balance = 1 * currency::UNIT;
-	pub const PreimageByteDeposit: Balance = 1 * currency::UNIT/100;
+	pub const PreimageByteDeposit: Balance = 1 * currency::CENTS;
 }
 
 impl pallet_preimage::Config for Runtime {
@@ -812,22 +814,6 @@ impl pallet_preimage::Config for Runtime {
 	type MaxSize = PreimageMaxSize;
 	type BaseDeposit = PreimageBaseDeposit;
 	type ByteDeposit = PreimageByteDeposit;
-}
-
-parameter_types! {
-	pub const MaxWellKnownNodes: u32 = 8;
-	pub const MaxPeerIdLength: u32 = 128;
-}
-
-impl pallet_node_authorization::Config for Runtime {
-	type Event = Event;
-	type MaxWellKnownNodes = MaxWellKnownNodes;
-	type MaxPeerIdLength = MaxPeerIdLength;
-	type AddOrigin = EnsureRootOrHalfCouncil;
-	type RemoveOrigin = EnsureRootOrHalfCouncil;
-	type SwapOrigin = EnsureRootOrHalfCouncil;
-	type ResetOrigin = EnsureRootOrHalfCouncil;
-	type WeightInfo = ();
 }
 
 pub struct FindAuthorTruncated<F>(PhantomData<F>);
@@ -1155,7 +1141,7 @@ parameter_types! {
 	pub const CuratorDepositMax: Balance = 100 * currency::SOLAR;
 	pub const BountyDepositPayoutDelay: BlockNumber = 1 * DAYS;
 	pub const BountyUpdatePeriod: BlockNumber = 14 * DAYS;
-	pub const DataDepositPerByte: Balance = 1 * currency::SOLAR/100;
+	pub const DataDepositPerByte: Balance = 1 * currency::CENTS;
 	pub const MaximumReasonLength: u32 = 300;
 	pub const TipCountdown: BlockNumber = 1 * DAYS;
 	pub const TipFindersFee: Percent = Percent::from_percent(20);
@@ -1232,8 +1218,6 @@ impl pallet_authority_discovery::Config for Runtime {
 	type MaxAuthorities = MaxAuthorities;
 }
 
-mod voter_bags;
-
 parameter_types! {
 	pub const BagThresholds: &'static [u64] = &voter_bags::THRESHOLDS;
 }
@@ -1290,7 +1274,7 @@ construct_runtime!(
 		BagsList: pallet_bags_list=27,
 		NominationPools: pallet_nomination_pools=28,
 
-		NodeAuthorization: pallet_node_authorization=29,
+		//NodeAuthorization: pallet_node_authorization=29,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip =30,
 		Sudo: pallet_sudo=31,
 		Contracts: pallet_contracts=32,

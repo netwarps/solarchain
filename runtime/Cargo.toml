@@ -69,9 +69,6 @@ pallet-contracts-rpc-runtime-api = { git = "https://github.com/paritytech/substr
 # scheduler
 pallet-scheduler = { git = "https://github.com/paritytech/substrate",version = "4.0.0-dev",branch = "polkadot-v0.9.22", package = "pallet-scheduler",default-features = false }
 
-# permissioned-network 
-pallet-node-authorization = { git = "https://github.com/paritytech/substrate.git", version = "4.0.0-dev", branch = "polkadot-v0.9.22",  default-features = false }
-
 #staking
 pallet-preimage = { git = "https://github.com/paritytech/substrate.git", version = "4.0.0-dev", branch = "polkadot-v0.9.22",  default-features = false }
 pallet-multisig = { git = "https://github.com/paritytech/substrate.git", version = "4.0.0-dev", branch = "polkadot-v0.9.22",  default-features = false }
@@ -160,7 +157,6 @@ std = [
 	"pallet-contracts-primitives/std",
 	"pallet-contracts-rpc-runtime-api/std",
 	"pallet-scheduler/std",
-	'pallet-node-authorization/std',
 
 	"sp-arithmetic/std",
 	"sp-authority-discovery/std",

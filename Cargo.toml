@@ -1,6 +1,12 @@
 [workspace]
 members = [
     'node',
+    'node/bench',
+    'node/executor',
+    'node/inspect',
+    'node/rpc',
+    'node/testing',
+    'primitives',
     'runtime',
 ]
 exclude = [

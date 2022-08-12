@@ -63,6 +63,8 @@ impl SubstrateCli for Cli {
 /// Parse command line arguments into service configuration.
 pub fn run() -> Result<()> {
 	let cli = Cli::from_args();
+    // custom ss58 prefix
+	sp_core::crypto::set_default_ss58_version(sp_core::crypto::Ss58AddressFormat::custom(1024));
 
 	match &cli.subcommand {
 		None => {

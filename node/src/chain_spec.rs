@@ -5,7 +5,7 @@ use hex_literal::hex;
 use node_runtime::{
 	constants::currency::*, wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig,
 	BalancesConfig, Block, GrandpaConfig,
-	ImOnlineConfig, IndicesConfig, MaxNominations, SessionConfig,
+	ImOnlineConfig, MaxNominations, SessionConfig,
 	SessionKeys, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -176,9 +176,17 @@ pub fn staging_testnet_config() -> ChainSpec {
 			TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
 				.expect("Staging telemetry url is valid; qed"),
 		),
+		// Protocol ID
 		None,
+		// Fork ID
 		None,
-		None,
+		// Properties
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLR\", \"SS58Prefix\": 1024}",
+			)
+				.expect("Provided valid json map"),
+		),
 		Default::default(),
 	)
 }
@@ -272,7 +280,7 @@ pub fn testnet_genesis(
 		}))
 		.collect::<Vec<_>>();
 
-	const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
+	const ENDOWMENT: Balance = 10_000_000 * SOLR;
 	const STASH: Balance = ENDOWMENT / 1000;
 
 	GenesisConfig {
@@ -280,7 +288,6 @@ pub fn testnet_genesis(
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
 		},
-		indices: IndicesConfig { indices: vec![] },
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()
@@ -330,11 +337,21 @@ pub fn development_config() -> ChainSpec {
 		"dev",
 		ChainType::Development,
 		development_config_genesis,
+		// Bootnodes
 		vec![],
+		// Telemetry
 		None,
+		// Protocol ID
 		None,
+		// Fork ID
 		None,
-		None,
+		// Properties
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLR\", \"SS58Prefix\": 1024}",
+			)
+				.expect("Provided valid json map"),
+		),
 		Default::default(),
 	)
 }
@@ -355,11 +372,21 @@ pub fn local_testnet_config() -> ChainSpec {
 		"local_testnet",
 		ChainType::Local,
 		local_testnet_genesis,
+		// Bootnodes
 		vec![],
+		// Telemetry
 		None,
+		// Protocol ID
 		None,
+		// Fork ID
 		None,
-		None,
+		// Properties
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLR\", \"SS58Prefix\": 1024}",
+			)
+				.expect("Provided valid json map"),
+		),
 		Default::default(),
 	)
 }

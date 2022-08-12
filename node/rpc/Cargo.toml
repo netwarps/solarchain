@@ -1,18 +1,20 @@
 [package]
 name = "node-rpc"
-version = "3.0.0-dev"
-authors = ["Parity Technologies <admin@parity.io>"]
+version = "0.2.0"
+authors = ["netwarps Technologies <admin@netwarps.com>"]
+description = "Substrate node configured for smart contracts via `pallet-contracts`."
 edition = "2021"
-license = "Apache-2.0"
-homepage = "https://substrate.io"
-repository = "https://github.com/paritytech/substrate/"
+license = "Unlicense"
+homepage = "https://github.com/netwarps/solar-node"
+repository = "https://github.com/netwarps/solar-node"
+publish = false
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 jsonrpsee = { version = "0.14.0", features = ["server"] }
-node-primitives = { version = "2.0.0", path = "../../primitives" }
+node-primitives = { version = "0.2.0", path = "../../primitives" }
 pallet-contracts-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-transaction-payment-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 sc-chain-spec = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }

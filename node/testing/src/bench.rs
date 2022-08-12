@@ -36,7 +36,7 @@ use codec::{Decode, Encode};
 use futures::executor;
 use node_primitives::Block;
 use node_runtime::{
-	constants::currency::DOLLARS, AccountId, BalancesCall, Call, CheckedExtrinsic, MinimumPeriod,
+	constants::currency::SOLR, AccountId, BalancesCall, Call, CheckedExtrinsic, MinimumPeriod,
 	Signature, SystemCall, UncheckedExtrinsic,
 };
 use sc_block_builder::BlockBuilderProvider;
@@ -317,7 +317,7 @@ impl<'a> Iterator for BlockContentIterator<'a> {
 							dest: sp_runtime::MultiAddress::Id(receiver),
 							// Transfer so that ending balance would be 1 less than existential
 							// deposit so that we kill the sender account.
-							value: 100 * DOLLARS - (node_runtime::ExistentialDeposit::get() - 1),
+							value: 100 * SOLR - (node_runtime::ExistentialDeposit::get() - 1),
 						})
 					},
 					BlockType::Noop => Call::System(SystemCall::remark { remark: Vec::new() }),

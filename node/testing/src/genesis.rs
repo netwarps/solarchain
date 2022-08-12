@@ -21,7 +21,7 @@
 use crate::keyring::*;
 use node_runtime::{
 	constants::currency::*, wasm_binary_unwrap, AccountId, BabeConfig, BalancesConfig,
-	GenesisConfig, GrandpaConfig, IndicesConfig, SessionConfig, StakerStatus,
+	GenesisConfig, GrandpaConfig, SessionConfig, StakerStatus,
 	StakingConfig, SystemConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 use sp_keyring::{Ed25519Keyring, Sr25519Keyring};
@@ -36,21 +36,20 @@ pub fn config(code: Option<&[u8]>) -> GenesisConfig {
 /// endowed accounts.
 pub fn config_endowed(code: Option<&[u8]>, extra_endowed: Vec<AccountId>) -> GenesisConfig {
 	let mut endowed = vec![
-		(alice(), 111 * DOLLARS),
-		(bob(), 100 * DOLLARS),
-		(charlie(), 100_000_000 * DOLLARS),
-		(dave(), 111 * DOLLARS),
-		(eve(), 101 * DOLLARS),
-		(ferdie(), 100 * DOLLARS),
+		(alice(), 111 * SOLR),
+		(bob(), 100 * SOLR),
+		(charlie(), 100_000_000 * SOLR),
+		(dave(), 111 * SOLR),
+		(eve(), 101 * SOLR),
+		(ferdie(), 100 * SOLR),
 	];
 
-	endowed.extend(extra_endowed.into_iter().map(|endowed| (endowed, 100 * DOLLARS)));
+	endowed.extend(extra_endowed.into_iter().map(|endowed| (endowed, 100 * SOLR)));
 
 	GenesisConfig {
 		system: SystemConfig {
 			code: code.map(|x| x.to_vec()).unwrap_or_else(|| wasm_binary_unwrap().to_vec()),
 		},
-		indices: IndicesConfig { indices: vec![] },
 		balances: BalancesConfig { balances: endowed },
 		session: SessionConfig {
 			keys: vec![
@@ -65,9 +64,9 @@ pub fn config_endowed(code: Option<&[u8]>, extra_endowed: Vec<AccountId>) -> Gen
 		},
 		staking: StakingConfig {
 			stakers: vec![
-				(dave(), alice(), 111 * DOLLARS, StakerStatus::Validator),
-				(eve(), bob(), 100 * DOLLARS, StakerStatus::Validator),
-				(ferdie(), charlie(), 100 * DOLLARS, StakerStatus::Validator),
+				(dave(), alice(), 111 * SOLR, StakerStatus::Validator),
+				(eve(), bob(), 100 * SOLR, StakerStatus::Validator),
+				(ferdie(), charlie(), 100 * SOLR, StakerStatus::Validator),
 			],
 			validator_count: 3,
 			minimum_validator_count: 0,

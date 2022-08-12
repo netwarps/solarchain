@@ -1,6 +1,6 @@
 {
-  "name": "Staging Testnet",
-  "id": "staging_testnet",
+  "name": "Solarnetwork Testnet",
+  "id": "solarnetwork_testnet",
   "chainType": "Live",
   "bootNodes": [],
   "telemetryEndpoints": [

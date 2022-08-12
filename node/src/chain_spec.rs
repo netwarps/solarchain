@@ -168,8 +168,8 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 pub fn staging_testnet_config() -> ChainSpec {
 	let boot_nodes = vec![];
 	ChainSpec::from_genesis(
-		"Solarnetwork Staging Testnet",
-		"solarnetwork_staging_testnet",
+		"Solarnetwork Testnet",
+		"solarnetwork_testnet",
 		ChainType::Live,
 		staging_testnet_config_genesis,
 		boot_nodes,

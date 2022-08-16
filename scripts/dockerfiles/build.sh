@@ -10,7 +10,7 @@ cd $PROJECT_ROOT
 # Find the current version from Cargo.toml
 VERSION=`grep "^version" ./node/Cargo.toml | egrep -o "([0-9\.]+)"`
 GITUSER=netwarps
-GITREPO=solarchain
+GITREPO=solarnetwork
 REGISTRY=registry.paradeum.com
 
 # Build the image

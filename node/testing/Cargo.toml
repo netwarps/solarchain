@@ -1,6 +1,6 @@
 [package]
 name = "node-testing"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["netwarps Technologies <admin@netwarps.com>"]
 description = "Substrate node configured for smart contracts via `pallet-contracts`."
 edition = "2021"
@@ -19,9 +19,9 @@ futures = "0.3.21"
 log = "0.4.17"
 tempfile = "3.1.0"
 frame-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
-node-executor = { version = "0.2.0", path = "../executor" }
-node-primitives = { version = "0.2.0", path = "../../primitives" }
-node-runtime = { version = "0.2.0", path = "../../runtime" }
+node-executor = { version = "0.2.1", path = "../executor" }
+node-primitives = { version = "0.2.1", path = "../../primitives" }
+node-runtime = { version = "0.2.1", path = "../../runtime" }
 pallet-asset-tx-payment = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-transaction-payment = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 sc-block-builder = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }

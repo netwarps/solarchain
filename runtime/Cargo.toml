@@ -1,6 +1,6 @@
 [package]
 name = "node-runtime"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["netwarps Technologies <admin@netwarps.com>"]
 edition = "2021"
 license = "Unlicense"
@@ -25,7 +25,7 @@ sp-authority-discovery = { version = "4.0.0-dev", default-features = false, git 
 sp-consensus-babe = { version = "0.10.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false, version = "4.0.0-dev" }
 sp-inherents = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
-node-primitives = { version = "0.2.0", default-features = false, path = "../primitives" }
+node-primitives = { version = "0.2.1", default-features = false, path = "../primitives" }
 sp-offchain = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }

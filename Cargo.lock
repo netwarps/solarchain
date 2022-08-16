@@ -3923,7 +3923,7 @@ dependencies = [
 
 [[package]]
 name = "node-executor"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "criterion",
  "frame-benchmarking",
@@ -3957,7 +3957,7 @@ dependencies = [
 
 [[package]]
 name = "node-inspect"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap 3.2.16",
  "parity-scale-codec",
@@ -3973,7 +3973,7 @@ dependencies = [
 
 [[package]]
 name = "node-primitives"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "frame-system",
  "parity-scale-codec",
@@ -3985,7 +3985,7 @@ dependencies = [
 
 [[package]]
 name = "node-rpc"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "jsonrpsee",
  "node-primitives",
@@ -4015,7 +4015,7 @@ dependencies = [
 
 [[package]]
 name = "node-runtime"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4080,7 +4080,7 @@ dependencies = [
 
 [[package]]
 name = "node-testing"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "frame-system",
  "fs_extra",
@@ -7412,7 +7412,7 @@ dependencies = [
 
 [[package]]
 name = "solar-node"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "assert_cmd",
  "async-std",

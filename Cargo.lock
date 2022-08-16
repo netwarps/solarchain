@@ -3922,43 +3922,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-bench"
-version = "0.2.0"
-dependencies = [
- "clap 3.2.16",
- "derive_more",
- "fs_extra",
- "futures",
- "hash-db",
- "hex",
- "kvdb",
- "kvdb-rocksdb",
- "lazy_static",
- "log",
- "node-primitives",
- "node-runtime",
- "node-testing",
- "parity-db",
- "parity-util-mem",
- "rand 0.7.3",
- "sc-basic-authorship",
- "sc-client-api",
- "sc-transaction-pool",
- "sc-transaction-pool-api",
- "serde",
- "serde_json",
- "sp-consensus",
- "sp-core",
- "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
- "sp-timestamp",
- "sp-tracing",
- "sp-trie",
- "tempfile",
-]
-
-[[package]]
 name = "node-executor"
 version = "0.2.0"
 dependencies = [
@@ -3972,7 +3935,7 @@ dependencies = [
  "node-testing",
  "pallet-balances",
  "pallet-contracts",
- "pallet-im-online",
+ "pallet-im-online 4.0.0-dev",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-treasury",
@@ -4077,7 +4040,7 @@ dependencies = [
  "pallet-election-provider-support-benchmarking",
  "pallet-grandpa",
  "pallet-identity",
- "pallet-im-online",
+ "pallet-im-online 4.0.0-dev",
  "pallet-multisig",
  "pallet-offences",
  "pallet-offences-benchmarking",
@@ -4586,9 +4549,28 @@ dependencies = [
 [[package]]
 name = "pallet-im-online"
 version = "4.0.0-dev"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.25#3348e144f0a2b39ce08bd8e3b976c42fe0c990b9"
 dependencies = [
  "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-authorship",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-im-online"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.25#3348e144f0a2b39ce08bd8e3b976c42fe0c990b9"
+dependencies = [
  "frame-support",
  "frame-system",
  "log",
@@ -4647,7 +4629,7 @@ dependencies = [
  "pallet-babe",
  "pallet-balances",
  "pallet-grandpa",
- "pallet-im-online",
+ "pallet-im-online 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.25)",
  "pallet-offences",
  "pallet-session",
  "pallet-staking",
@@ -7452,7 +7434,7 @@ dependencies = [
  "node-runtime",
  "pallet-asset-tx-payment",
  "pallet-balances",
- "pallet-im-online",
+ "pallet-im-online 4.0.0-dev",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "parity-scale-codec",

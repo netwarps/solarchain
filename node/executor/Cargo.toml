@@ -34,7 +34,8 @@ frame-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/sub
 node-testing = { version = "0.2.0", path = "../testing" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-contracts = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
-pallet-im-online = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
+#pallet-im-online = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
+pallet-im-online = { version = "4.0.0-dev", default-features = false, path = "../../pallets/im-online" }
 pallet-sudo = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-treasury = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }

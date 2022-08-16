@@ -72,7 +72,8 @@ frame-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/sub
 frame-system-rpc-runtime-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-transaction-payment = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 pallet-asset-tx-payment = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
-pallet-im-online = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
+pallet-im-online = { version = "4.0.0-dev", default-features = false, path = "../pallets/im-online" }
+#pallet-im-online = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25" }
 
 # node-specific dependencies
 node-runtime = { version = "0.2.0", path = "../runtime" }

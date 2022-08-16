@@ -63,6 +63,7 @@ pub fn create_extrinsic(
 		.checked_next_power_of_two()
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
+    let tip = 0;
 	let extra: node_runtime::SignedExtra = (
 		frame_system::CheckNonZeroSender::<node_runtime::Runtime>::new(),
 		frame_system::CheckSpecVersion::<node_runtime::Runtime>::new(),
@@ -74,6 +75,7 @@ pub fn create_extrinsic(
 		)),
 		frame_system::CheckNonce::<node_runtime::Runtime>::from(nonce),
 		frame_system::CheckWeight::<node_runtime::Runtime>::new(),
+        pallet_transaction_payment::ChargeTransactionPayment::<node_runtime::Runtime>::from(tip),
 	);
 
 	let raw_payload = node_runtime::SignedPayload::from_raw(
@@ -87,6 +89,7 @@ pub fn create_extrinsic(
 			best_hash,
 			(),
 			(),
+            (),
 		),
 	);
 	let signature = raw_payload.using_encoded(|e| sender.sign(e));

@@ -164,6 +164,113 @@ fn staging_testnet_config_genesis() -> GenesisConfig {
 	testnet_genesis(initial_authorities, vec![], root_key, Some(endowed_accounts))
 }
 
+
+fn staging_devnet_config_genesis() -> GenesisConfig {
+	#[rustfmt::skip]
+	// secret='card exotic trend inject drastic bicycle reject chunk state genuine uphold ozone'
+	// for i in 1 2 3 4 5 ; do for j in stash controller session; do ./target/release/solar-node key inspect
+	// "$secret"//solarnetwork//$j//$i; done; done;
+	// for i in 1 2 3 4 5 ; do for j in session; do ./target/release/solar-node key inspect --scheme ed25519
+	// "$secret"//solarnetwork//$j//$i; done; done;
+	let initial_authorities: Vec<(
+		AccountId,
+		AccountId,
+		GrandpaId,
+		BabeId,
+		ImOnlineId,
+		AuthorityDiscoveryId,
+	)> = vec![
+		(
+			// Stash
+			hex!["46395f7c89a874982bcc69a7d1c046a034f55c98de44634706fd7dc0e6fa6d1d"].into(),
+			// Controller
+			hex!["94b6ef07f223d3f745a756b652a971342d8c75c93da0bc54059886f84fa23b0a"].into(),
+			// Session key ed25519
+			hex!["12bcdd528e353a5f6b0e6f6140360292339c89a2ba0b72bb4da536324d964a43"]
+				.unchecked_into(),
+			// Session key sr25519
+			hex!["0c5cbe7e6ac82b1cdf688d8909eaaa4884ef0efadc4c309893e54bc3989e854f"]
+				.unchecked_into(),
+			hex!["0c5cbe7e6ac82b1cdf688d8909eaaa4884ef0efadc4c309893e54bc3989e854f"]
+				.unchecked_into(),
+			hex!["0c5cbe7e6ac82b1cdf688d8909eaaa4884ef0efadc4c309893e54bc3989e854f"]
+				.unchecked_into(),
+		),
+		(
+			// Stash
+			hex!["64044bbc8fdf99efd9dfd71034a5724447a18f67b4e6c2d9942e8ecc9ac6d423"].into(),
+			// Controller
+			hex!["cef097f06c110ca7400d77d3663a22909061065ad3d9f07933d323ab7e713510"].into(),
+			// Session key ed25519
+			hex!["ca17406a5321d71282052705c9823f6dbed0386286d37a6bc05991003381846b"]
+				.unchecked_into(),
+			// Session key sr25519
+			hex!["1e313fde2995864a3795de41f2b9c2128023c8d48b1fb57723958cd41857207a"]
+				.unchecked_into(),
+			hex!["1e313fde2995864a3795de41f2b9c2128023c8d48b1fb57723958cd41857207a"]
+				.unchecked_into(),
+			hex!["1e313fde2995864a3795de41f2b9c2128023c8d48b1fb57723958cd41857207a"]
+				.unchecked_into(),
+		),
+		(
+			// Stash
+			hex!["b8b8671699468316d52e745236292e3538b2ef92e6823152cf8da95d8c17d900"].into(),
+			// Controller
+			hex!["f2fd8d11982696bd3904a6246bd9579900e134edbafa9978df7b9d1851a31b43"].into(),
+			// Session key ed25519
+			hex!["3f0701580967b827ab893f8a47883591c573a2d494820cc1efb131d117b1977b"]
+				.unchecked_into(),
+			// Session key sr25519
+			hex!["9a59cfab833e5a9f4dcfcbadb46bf981edb9f0257a26b9a65fd53857663c181e"]
+				.unchecked_into(),
+			hex!["9a59cfab833e5a9f4dcfcbadb46bf981edb9f0257a26b9a65fd53857663c181e"]
+				.unchecked_into(),
+			hex!["9a59cfab833e5a9f4dcfcbadb46bf981edb9f0257a26b9a65fd53857663c181e"]
+				.unchecked_into(),
+		),
+		(
+			// Stash
+			hex!["aa8f97fa788a30ba43cb2099af2d99cf190292f4c309330c68e3536aa09f0527"].into(),
+			// Controller
+			hex!["faa981a855f368b27905fa1b3b973d337c2c63470f85e0165db7ef6383732d39"].into(),
+			// Session key ed25519
+			hex!["0b7bd766027b5b36084bdde5983552fb705858b17487c8f33ac230852c02935c"]
+				.unchecked_into(),
+			// Session key sr25519
+			hex!["468c180dfd621eadbea24a732b9813b914e44f3561ccf9de66ee75429126d53e"]
+				.unchecked_into(),
+			hex!["468c180dfd621eadbea24a732b9813b914e44f3561ccf9de66ee75429126d53e"]
+				.unchecked_into(),
+			hex!["468c180dfd621eadbea24a732b9813b914e44f3561ccf9de66ee75429126d53e"]
+				.unchecked_into(),
+		),
+		(
+			// Stash
+			hex!["70ad3b8980dad59c0cef22ce046ca231fa22939b84b87562000f0875ab1f313a"].into(),
+			// Controller
+			hex!["e8af312226762b02d90a51326a139bc209a76271af35c6d47c807c23d760d646"].into(),
+			// Session key ed25519
+			hex!["8911bcef88df105f0db85a7c673b38cec90ccd1feb137e30cd1ce3c95ae221b6"]
+				.unchecked_into(),
+			// Session key sr25519
+			hex!["689677627538d561136362a67c4f72e94c2368340b95572925bdb42bbdb63d39"]
+				.unchecked_into(),
+			hex!["689677627538d561136362a67c4f72e94c2368340b95572925bdb42bbdb63d39"]
+				.unchecked_into(),
+			hex!["689677627538d561136362a67c4f72e94c2368340b95572925bdb42bbdb63d39"]
+				.unchecked_into(),
+		)
+	];
+
+	// generated with secret: ./target/release/solar-node key inspect "$secret"//solarnetwork
+	let root_key: AccountId =
+		hex!["fe70746d8527d8fb124593531fdc102f4856e92749efb42ce38d1a15e0486475"].into();
+
+	let endowed_accounts: Vec<AccountId> = vec![root_key.clone()];
+
+	testnet_genesis(initial_authorities, vec![], root_key, Some(endowed_accounts))
+}
+
 /// Staging testnet config.
 pub fn staging_testnet_config() -> ChainSpec {
 	let boot_nodes = vec![];
@@ -172,6 +279,34 @@ pub fn staging_testnet_config() -> ChainSpec {
 		"solarnetwork_testnet",
 		ChainType::Live,
 		staging_testnet_config_genesis,
+		boot_nodes,
+		Some(
+			TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+				.expect("Staging telemetry url is valid; qed"),
+		),
+		// Protocol ID
+		None,
+		// Fork ID
+		None,
+		// Properties
+		Some(
+			serde_json::from_str(
+				"{\"tokenDecimals\": 18, \"tokenSymbol\": \"SOLR\", \"SS58Prefix\": 1024}",
+			)
+				.expect("Provided valid json map"),
+		),
+		Default::default(),
+	)
+}
+
+/// Staging dev config.
+pub fn staging_devnet_config() -> ChainSpec {
+	let boot_nodes = vec![];
+	ChainSpec::from_genesis(
+		"Solarnetwork Devnet",
+		"solarnetwork_devnet",
+		ChainType::Live,
+		staging_devnet_config_genesis,
 		boot_nodes,
 		Some(
 			TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
